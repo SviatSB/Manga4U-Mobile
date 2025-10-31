@@ -1,0 +1,360 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/card_background_dark">
+
+    <!-- Основна прокрутка -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- Заголовок -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="32dp"
+                android:gravity="center"
+                android:text="Акаунт"
+                android:textColor="@color/background"
+                android:textSize="28sp"
+                android:textStyle="bold" />
+
+            <!-- Контейнер для різних станів -->
+            <FrameLayout
+                android:id="@+id/account_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <!-- Стан: Не авторизований -->
+                <LinearLayout
+                    android:id="@+id/not_logged_in_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <!-- Перемикач між входом та реєстрацією -->
+                    <com.google.android.material.tabs.TabLayout
+                        android:id="@+id/auth_tab_layout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="24dp"
+                        app:tabMode="fixed"
+                        app:tabGravity="fill"
+                        app:tabTextColor="@color/text_secondary"
+                        app:tabSelectedTextColor="@color/primary"
+                        app:tabIndicatorColor="@color/primary">
+
+                        <com.google.android.material.tabs.TabItem
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Вхід" />
+
+                        <com.google.android.material.tabs.TabItem
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Реєстрація" />
+
+                    </com.google.android.material.tabs.TabLayout>
+
+                    <!-- ViewPager для перемикання між формами -->
+                    <androidx.viewpager2.widget.ViewPager2
+                        android:id="@+id/auth_view_pager"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content" />
+
+                </LinearLayout>
+
+                <!-- Стан: Авторизований -->
+                <LinearLayout
+                    android:id="@+id/logged_in_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <!-- Інформація про користувача -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="24dp"
+                        app:cardCornerRadius="20dp"
+                        app:cardElevation="8dp"
+                        app:cardBackgroundColor="@color/surface">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="24dp">
+
+                            <!-- Аватар та основна інформація -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginBottom="24dp">
+
+                                <!-- Аватар -->
+                                <com.google.android.material.imageview.ShapeableImageView
+                                    android:id="@+id/user_avatar"
+                                    android:layout_width="100dp"
+                                    android:layout_height="100dp"
+                                    android:src="@drawable/ic_person"
+                                    android:background="@drawable/avatar_background"
+                                    android:padding="20dp"
+                                    android:tint="@color/primary"
+                                    app:shapeAppearanceOverlay="@style/CircleImageView"
+                                    android:layout_marginEnd="20dp" />
+
+                                <!-- Основна інформація -->
+                                <LinearLayout
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:orientation="vertical"
+                                    android:gravity="center_vertical">
+
+                                    <TextView
+                                        android:id="@+id/user_login"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Логін користувача"
+                                        android:textSize="22sp"
+                                        android:textStyle="bold"
+                                        android:textColor="@color/text_primary"
+                                        android:layout_marginBottom="4dp" />
+
+                                    <TextView
+                                        android:id="@+id/user_nickname"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Нікнейм"
+                                        android:textSize="16sp"
+                                        android:textColor="@color/primary"
+                                        android:layout_marginBottom="8dp" />
+
+                                    <!-- Статус онлайн -->
+                                    <LinearLayout
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:orientation="horizontal"
+                                        android:gravity="center_vertical">
+
+                                        <View
+                                            android:layout_width="8dp"
+                                            android:layout_height="8dp"
+                                            android:background="@drawable/online_indicator"
+                                            android:layout_marginEnd="6dp" />
+
+                                        <TextView
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:text="Онлайн"
+                                            android:textSize="12sp"
+                                            android:textColor="@color/text_secondary" />
+
+                                    </LinearLayout>
+
+                                </LinearLayout>
+
+                            </LinearLayout>
+
+                            <!-- Детальна інформація -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical">
+
+                                <!-- Логін -->
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal"
+                                    android:padding="16dp"
+                                    android:background="@drawable/info_item_background"
+                                    android:layout_marginBottom="8dp">
+
+                                    <TextView
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:text="Логін:"
+                                        android:textSize="14sp"
+                                        android:textColor="@color/text_secondary"
+                                        android:textStyle="bold" />
+
+                                    <TextView
+                                        android:id="@+id/user_login_display"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="nikola"
+                                        android:textSize="14sp"
+                                        android:textColor="@color/text_primary" />
+
+                                </LinearLayout>
+
+                                <!-- Нікнейм -->
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal"
+                                    android:padding="16dp"
+                                    android:background="@drawable/info_item_background"
+                                    android:layout_marginBottom="8dp">
+
+                                    <TextView
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:text="Нікнейм:"
+                                        android:textSize="14sp"
+                                        android:textColor="@color/text_secondary"
+                                        android:textStyle="bold" />
+
+                                    <TextView
+                                        android:id="@+id/user_nickname_display"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Durin"
+                                        android:textSize="14sp"
+                                        android:textColor="@color/text_primary" />
+
+                                </LinearLayout>
+
+                                <!-- Про себе -->
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="vertical"
+                                    android:padding="16dp"
+                                    android:background="@drawable/info_item_background"
+                                    android:layout_marginBottom="8dp">
+
+                                    <TextView
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="Про себе:"
+                                        android:textSize="14sp"
+                                        android:textColor="@color/text_secondary"
+                                        android:textStyle="bold"
+                                        android:layout_marginBottom="4dp" />
+
+                                    <TextView
+                                        android:id="@+id/user_about_display"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="Я люблю манги"
+                                        android:textSize="14sp"
+                                        android:textColor="@color/text_primary"
+                                        android:lineSpacingExtra="2dp" />
+
+                                </LinearLayout>
+
+                                <!-- Мова -->
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="horizontal"
+                                    android:padding="16dp"
+                                    android:background="@drawable/info_item_background">
+
+                                    <TextView
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:text="Мова:"
+                                        android:textSize="14sp"
+                                        android:textColor="@color/text_secondary"
+                                        android:textStyle="bold" />
+
+                                    <TextView
+                                        android:id="@+id/user_language_display"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:text="Ua"
+                                        android:textSize="14sp"
+                                        android:textColor="@color/text_primary" />
+
+                                </LinearLayout>
+
+                            </LinearLayout>
+
+                            <!-- Кнопки дій -->
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:layout_marginTop="24dp">
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btn_edit_profile"
+                                    android:layout_width="0dp"
+                                    android:layout_height="56dp"
+                                    android:layout_weight="1"
+                                    android:text="Редагувати профіль"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold"
+                                    app:cornerRadius="28dp"
+                                    android:backgroundTint="@color/primary"
+                                    android:layout_marginEnd="12dp"
+                                    app:icon="@drawable/ic_edit"
+                                    app:iconGravity="textStart"
+                                    app:iconPadding="8dp" />
+
+                                <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/btn_logout"
+                                    android:layout_width="0dp"
+                                    android:layout_height="56dp"
+                                    android:layout_weight="1"
+                                    android:text="Вийти"
+                                    android:textSize="16sp"
+                                    android:textStyle="bold"
+                                    app:cornerRadius="28dp"
+                                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                    app:strokeColor="@color/error"
+                                    android:textColor="@color/error"
+                                    app:icon="@drawable/ic_logout"
+                                    app:iconGravity="textStart"
+                                    app:iconPadding="8dp" />
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Останні прочитані манги -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Останні прочитані"
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="16dp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recent_manga_recycler"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
+
+                </LinearLayout>
+
+            </FrameLayout>
+
+        </LinearLayout>
+
+    </androidx.core.widget.NestedScrollView>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

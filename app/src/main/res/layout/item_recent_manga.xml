@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/primary_light">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="16dp">
+
+        <!-- Обкладинка манги -->
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/manga_cover"
+            android:layout_width="80dp"
+            android:layout_height="120dp"
+            android:scaleType="centerCrop"
+            app:shapeAppearanceOverlay="@style/CircleImageView"
+            android:src="@drawable/placeholder_manga" />
+
+        <!-- Інформація про мангу -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="16dp">
+
+            <!-- Назва манги -->
+            <TextView
+                android:id="@+id/manga_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Назва манги"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:maxLines="2"
+                android:ellipsize="end" />
+
+            <!-- Інформація про главу -->
+            <TextView
+                android:id="@+id/manga_chapter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Глава 1: Назва глави"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="4dp"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <!-- Прогрес читання -->
+            <TextView
+                android:id="@+id/manga_progress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Сторінка 5 з 20"
+                android:textSize="12sp"
+                android:textColor="@color/primary"
+                android:layout_marginTop="4dp" />
+
+            <!-- Прогрес бар -->
+            <com.google.android.material.progressindicator.LinearProgressIndicator
+                android:id="@+id/manga_progress_bar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:trackCornerRadius="4dp"
+                app:indicatorColor="@color/primary"
+                app:trackColor="@color/primary_light" />
+
+            <!-- Час останнього читання -->
+            <TextView
+                android:id="@+id/manga_time"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="25.08.2025 23:45"
+                android:textSize="11sp"
+                android:textColor="@color/text_tertiary"
+                android:layout_marginTop="8dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

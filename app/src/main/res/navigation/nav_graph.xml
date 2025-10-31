@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/nav_home">
+
+    <fragment
+        android:id="@+id/nav_home"
+        android:name="com.example.mangaapp.fragments.main.HomeFragment"
+        android:label="@string/menu_home"
+        tools:layout="@layout/fragment_home" />
+
+    
+
+    <fragment
+        android:id="@+id/nav_account"
+        android:name="com.example.mangaapp.fragments.account.AccountFragment"
+        android:label="@string/title_account"
+        tools:layout="@layout/fragment_account" />
+
+    <fragment
+        android:id="@+id/nav_manga_detail"
+        android:name="com.example.mangaapp.fragments.main.MangaDetailFragment"
+        android:label="Деталі манги"
+        tools:layout="@layout/fragment_manga_detail">
+        <argument
+            android:name="mangaId"
+            app:argType="string" />
+        <argument
+            android:name="mangaTitle"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_chapter_list"
+        android:name="com.example.mangaapp.fragments.main.ChapterListFragment"
+        android:label="Список глав"
+        tools:layout="@layout/fragment_chapter_list">
+        <argument
+            android:name="mangaId"
+            app:argType="string" />
+        <argument
+            android:name="mangaTitle"
+            app:argType="string" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_reader"
+        android:name="com.example.mangaapp.fragments.main.ReaderFragment"
+        android:label="Читач"
+        tools:layout="@layout/fragment_reader">
+        <argument
+            android:name="chapterId"
+            app:argType="string" />
+        <argument
+            android:name="mangaTitle"
+            app:argType="string" />
+        <argument
+            android:name="chapterTitle"
+            app:argType="string" />
+    </fragment>
+
+    <!-- Дії навігації -->
+    <action
+        android:id="@+id/action_homeFragment_to_mangaDetailFragment"
+        app:destination="@id/nav_manga_detail" />
+
+    <action
+        android:id="@+id/action_mangaDetailFragment_to_chapterListFragment"
+        app:destination="@id/nav_chapter_list" />
+
+    <action
+        android:id="@+id/action_chapterListFragment_to_readerFragment"
+        app:destination="@id/nav_reader" />
+
+</navigation>
