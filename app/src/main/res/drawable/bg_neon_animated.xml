@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animated-selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/state_default" android:drawable="@drawable/bg_gradient_1" />
+    <item android:id="@+id/state_animated" android:drawable="@drawable/bg_gradient_2" />
+
+    <transition
+        android:fromId="@+id/state_default"
+        android:toId="@+id/state_animated">
+        <animation-list android:oneshot="false">
+            <item android:drawable="@drawable/bg_gradient_1" android:duration="2000" />
+            <item android:drawable="@drawable/bg_gradient_2" android:duration="2000" />
+            <item android:drawable="@drawable/bg_gradient_3" android:duration="2000" />
+            <item android:drawable="@drawable/bg_gradient_4" android:duration="2000" />
+        </animation-list>
+    </transition>
+</animated-selector>

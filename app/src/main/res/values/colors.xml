@@ -9,12 +9,24 @@
     <color name="white">#FFFFFFFF</color>
     <color name="gray_600">#FF757575</color>
     <color name="gray_400">#FFBDBDBD</color>
+    <color name="dark_purple_1">#0F001F</color>
+    <color name="dark_purple_2">#1A0033</color>
+    <color name="dark_purple_3">#26004D</color>
+    <color name="dark_purple_4">#330066</color>
 
     <!-- Dark theme colors -->
     <color name="dark_background">#FF121212</color>
     <color name="dark_surface">#FF1E1E1E</color>
     <color name="dark_primary">#FFBB86FC</color>
     <color name="dark_on_surface">#FFFFFFFF</color>
+    
+    <!-- New dark theme colors matching the design -->
+    <color name="dark_gray_background">#FF1A1A1A</color>
+    <color name="dark_gray_surface">#FF2D2D2D</color>
+    <color name="dark_gray_input">#FF3A3A3A</color>
+    <color name="purple_accent">#FF7B3ADC</color>
+    <color name="white_text">#FFFFFFFF</color>
+    <color name="gray_text">#FFBDBDBD</color>
 
     <!-- App specific colors -->
     <color name="primary">@color/purple_500</color>

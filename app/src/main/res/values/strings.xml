@@ -18,5 +18,20 @@
     <string name="title_home">Головна</string>
     <string name="title_library">Бібліотека</string>
     <string name="title_account">Акаунт</string>
-    <string name="appbar_scrolling_view_behavior">com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior</string>
+    <!-- Profile Edit Strings -->
+    <string name="profile_edit_title">Редагування профілю</string>
+    <string name="profile_edit_subtitle">Оновіть свої дані</string>
+    <string name="upload_avatar">ЗАВАНТАЖИТИ</string>
+    <string name="remove_avatar">ПРИБРАТИ</string>
+    <string name="nickname">Нікнейм</string>
+    <string name="name">Ім\'я</string>
+    <string name="email">Email</string>
+    <string name="interface_language">Мова інтерфейсу</string>
+    <string name="about_me">Про себе</string>
+    <string name="change_password">Зміна паролю</string>
+    <string name="current_password">Поточний пароль</string>
+    <string name="new_password">Новий пароль</string>
+    <string name="confirm_password">Підтвердіть новий пароль</string>
+    <string name="save_changes">Зберегти зміни</string>
+    <string name="cancel">Скасувати</string>
 </resources>

@@ -17,7 +17,7 @@ import com.example.mangaapp.API_MangaDex.MangaResponse;
 import com.example.mangaapp.api.ApiClient;
 import com.example.mangaapp.Manga;
 import com.example.mangaapp.adapters.MangaAdapter;
-import com.example.mangaapp.api.MangaApiService;
+import com.example.mangaapp.MangaApiService;
 import com.example.mangaapp.R;
 
 import java.util.ArrayList;

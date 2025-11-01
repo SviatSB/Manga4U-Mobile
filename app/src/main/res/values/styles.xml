@@ -5,4 +5,34 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
+
+    <!-- Стиль для темних кнопок -->
+    <style name="DarkButton" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/dark_gray_input</item>
+        <item name="android:textColor">@color/white_text</item>
+        <item name="cornerRadius">8dp</item>
+    </style>
+
+    <!-- Стиль для фіолетових кнопок -->
+    <style name="PurpleButton" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/purple_accent</item>
+        <item name="android:textColor">@color/white_text</item>
+        <item name="cornerRadius">8dp</item>
+    </style>
+
+    <!-- Стиль для темних полів вводу -->
+    <style name="DarkTextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/dark_gray_input</item>
+        <item name="hintTextColor">@color/gray_text</item>
+        <item name="boxBackgroundColor">@color/dark_gray_input</item>
+        <item name="android:textColorHint">@color/gray_text</item>
+    </style>
+
+    <!-- Стиль для тексту з тінню -->
+    <style name="TextWithShadow">
+        <item name="android:shadowColor">#000000</item>
+        <item name="android:shadowDx">1</item>
+        <item name="android:shadowDy">1</item>
+        <item name="android:shadowRadius">2</item>
+    </style>
 </resources>

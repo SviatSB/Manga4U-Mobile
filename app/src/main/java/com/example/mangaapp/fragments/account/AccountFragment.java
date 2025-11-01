@@ -13,6 +13,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
@@ -51,7 +53,6 @@ public class AccountFragment extends Fragment implements
     private ShapeableImageView userAvatar;
     private TextView userLogin;
     private TextView userNickname;
-    // Старі поля видалені - тепер використовуємо нові поля для детального відображення
     private MaterialButton editProfileButton;
     private MaterialButton logoutButton;
     private RecyclerView recentMangaRecycler;
@@ -115,24 +116,21 @@ public class AccountFragment extends Fragment implements
         userAvatar = view.findViewById(R.id.user_avatar);
         userLogin = view.findViewById(R.id.user_login);
         userNickname = view.findViewById(R.id.user_nickname);
-        // Старі поля видалені - тепер використовуємо нові поля для детального відображення
         editProfileButton = view.findViewById(R.id.btn_edit_profile);
         logoutButton = view.findViewById(R.id.btn_logout);
         recentMangaRecycler = view.findViewById(R.id.recent_manga_recycler);
 
         editProfileButton.setOnClickListener(v -> openProfileEdit());
         logoutButton.setOnClickListener(v -> logout());
-        
-
     }
 
     private void setupViewPager() {
         authPagerAdapter = new AuthPagerAdapter(requireActivity());
-        
+
         // Встановлюємо callback для адаптера
         authPagerAdapter.setLoginListener(this);
         authPagerAdapter.setRegisterListener(this);
-        
+
         authViewPager.setAdapter(authPagerAdapter);
 
         // Зв'язуємо TabLayout з ViewPager2
@@ -147,8 +145,6 @@ public class AccountFragment extends Fragment implements
             }
         }).attach();
     }
-
-
 
     private void setupRecyclerView() {
         recentMangaAdapter = new RecentMangaAdapter(recentMangaList, manga -> {
@@ -166,7 +162,7 @@ public class AccountFragment extends Fragment implements
             // Користувач авторизований
             authToken = authManager.getAuthToken();
             currentUser = authManager.getCurrentUser();
-            
+
             // Оновлюємо дані користувача з серверу
             loadUserProfile();
             loadRecentManga();
@@ -179,10 +175,10 @@ public class AccountFragment extends Fragment implements
 
     private void loadUserProfile() {
         AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
-        
+
         // Спочатку спробуємо отримати дані через новий API endpoint
         Call<UserDto> call = apiService.getMe("Bearer " + authToken);
-        
+
         call.enqueue(new Callback<UserDto>() {
             @Override
             public void onResponse(@NonNull Call<UserDto> call, @NonNull Response<UserDto> response) {
@@ -208,7 +204,7 @@ public class AccountFragment extends Fragment implements
             }
         });
     }
-    
+
     private void loadUserProfileLegacy() {
         AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
         Call<User> call = apiService.getUserProfile(authToken);
@@ -236,7 +232,7 @@ public class AccountFragment extends Fragment implements
             }
         });
     }
-    
+
     private User convertUserDtoToUser(UserDto userDto) {
         User user = new User();
         user.setId(String.valueOf(userDto.getId()));
@@ -273,32 +269,32 @@ public class AccountFragment extends Fragment implements
     }
 
     private void updateUserInfo() {
-        if (currentUser != null) {
+        if (currentUser != null && getView() != null) {
             // Основні поля
-            userLogin.setText(currentUser.getLogin());
-            
+            userLogin.setText("@" + currentUser.getLogin()); // Додаємо @ перед логіном
+
             // Відображаємо нікнейм
             String nickname = currentUser.getNickname() != null ? currentUser.getNickname() : "Нікнейм не вказано";
             userNickname.setText(nickname);
 
-            // Оновлюємо нові поля для детального відображення
-            TextView userLoginDisplay = getView().findViewById(R.id.user_login_display);
-            TextView userNicknameDisplay = getView().findViewById(R.id.user_nickname_display);
-            TextView userAboutDisplay = getView().findViewById(R.id.user_about_display);
-            TextView userLanguageDisplay = getView().findViewById(R.id.user_language_display);
+            // Оновлюємо тільки публічні поля (нікнейм і про себе)
+            try {
+                TextView userNicknameDisplay = getView().findViewById(R.id.user_nickname_display);
+                if (userNicknameDisplay != null) {
+                    userNicknameDisplay.setText(currentUser.getNickname() != null ? currentUser.getNickname() : "Не вказано");
+                }
+            } catch (Exception e) {
+                Log.e("AccountFragment", "Error updating user_nickname_display", e);
+            }
 
-            if (userLoginDisplay != null) {
-                userLoginDisplay.setText(currentUser.getLogin());
-            }
-            if (userNicknameDisplay != null) {
-                userNicknameDisplay.setText(currentUser.getNickname() != null ? currentUser.getNickname() : "Не вказано");
-            }
-            if (userAboutDisplay != null) {
-                userAboutDisplay.setText(currentUser.getAboutMyself() != null && !currentUser.getAboutMyself().isEmpty() ?
-                        currentUser.getAboutMyself() : "Не вказано");
-            }
-            if (userLanguageDisplay != null) {
-                userLanguageDisplay.setText(currentUser.getLanguage() != null ? currentUser.getLanguage() : "ua");
+            try {
+                TextView userAboutDisplay = getView().findViewById(R.id.user_about_display);
+                if (userAboutDisplay != null) {
+                    userAboutDisplay.setText(currentUser.getAboutMyself() != null && !currentUser.getAboutMyself().isEmpty() ?
+                            currentUser.getAboutMyself() : "Не вказано");
+                }
+            } catch (Exception e) {
+                Log.e("AccountFragment", "Error updating user_about_display", e);
             }
 
             // Завантаження аватара користувача
@@ -309,9 +305,9 @@ public class AccountFragment extends Fragment implements
                         .error(R.drawable.ic_person)
                         .into(userAvatar);
             } else {
-                // Показуємо початкові літери логіну
+                // Показуємо стандартну аватарку
                 userAvatar.setImageResource(R.drawable.ic_person);
-                userAvatar.setBackgroundResource(R.color.primary_light);
+                userAvatar.setBackgroundResource(R.drawable.bg_gradient_1);
             }
         }
     }
@@ -344,7 +340,7 @@ public class AccountFragment extends Fragment implements
     @Override
     public void onLoginSuccess(String token, String userId) {
         Log.d("AccountFragment", "onLoginSuccess called with token: " + token + ", userId: " + userId);
-        
+
         authToken = token;
         // Зберігаємо токен в AuthManager
         authManager.saveAuthData(token, new User(userId, "temp", "temp"));
@@ -353,7 +349,7 @@ public class AccountFragment extends Fragment implements
         loadUserProfile();
         loadRecentManga();
         showLoggedInState();
-        
+
         Log.d("AccountFragment", "Login success - showing logged in state");
     }
 
@@ -361,7 +357,7 @@ public class AccountFragment extends Fragment implements
     @Override
     public void onRegisterSuccess(String token, String userId) {
         Log.d("AccountFragment", "onRegisterSuccess called with token: " + token + ", userId: " + userId);
-        
+
         authToken = token;
         // Зберігаємо токен в AuthManager
         authManager.saveAuthData(token, new User(userId, "temp", "temp"));
@@ -370,20 +366,20 @@ public class AccountFragment extends Fragment implements
         loadUserProfile();
         loadRecentManga();
         showLoggedInState();
-        
+
         Log.d("AccountFragment", "Register success - showing logged in state");
     }
 
     // Метод для оновлення прогресу читання (викликається з ReaderFragment)
-    public void updateReadingProgress(String mangaId, String chapterId, String mangaTitle, 
-                                   String chapterTitle, String chapterNumber, String coverUrl,
-                                   int currentPage, int totalPages) {
+    public void updateReadingProgress(String mangaId, String chapterId, String mangaTitle,
+                                      String chapterTitle, String chapterNumber, String coverUrl,
+                                      int currentPage, int totalPages) {
         if (authToken != null) {
             AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
             AccountApiService.ReadingProgressRequest request =
-                    new AccountApiService.ReadingProgressRequest(mangaId, chapterId, mangaTitle, 
-                                                              chapterTitle, chapterNumber, coverUrl,
-                                                              currentPage, totalPages);
+                    new AccountApiService.ReadingProgressRequest(mangaId, chapterId, mangaTitle,
+                            chapterTitle, chapterNumber, coverUrl,
+                            currentPage, totalPages);
 
             Call<Void> call = apiService.updateReadingProgress(authToken, request);
             call.enqueue(new Callback<Void>() {
@@ -406,16 +402,16 @@ public class AccountFragment extends Fragment implements
     }
 
     private void openProfileEdit() {
-        // Створюємо новий ProfileEditFragment
-        ProfileEditFragment profileEditFragment = new ProfileEditFragment();
-        
-        // Замінюємо поточний фрагмент
-        requireActivity().getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.nav_host_fragment_content_main, profileEditFragment)
-                .addToBackStack(null)
-                .commit();
+        try {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+
+            // Виконуємо навігацію з анімацією
+            navController.navigate(R.id.action_account_to_profile_edit);
+
+            Log.d("AccountFragment", "Navigating to profile edit with animation");
+        } catch (Exception e) {
+            Log.e("AccountFragment", "Error navigating to profile edit", e);
+            Toast.makeText(requireContext(), "Помилка відкриття редагування", Toast.LENGTH_SHORT).show();
+        }
     }
-
-
 }

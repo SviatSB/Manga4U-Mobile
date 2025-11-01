@@ -150,48 +150,48 @@ public class RegisterFragment extends Fragment {
         try {
             AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
             Call<ResponseBody> call = apiService.register(request);
-            
+
             Log.d("RegisterFragment", "API call created, executing...");
             Log.d("RegisterFragment", "Base URL: " + AccountApiClient.getClient().baseUrl());
 
             call.enqueue(new Callback<ResponseBody>() {
-            @Override
-            public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
-                showProgress(false);
-                Log.d("RegisterFragment", "Response received. Code: " + response.code() + ", Success: " + response.isSuccessful());
+                @Override
+                public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
+                    showProgress(false);
+                    Log.d("RegisterFragment", "Response received. Code: " + response.code() + ", Success: " + response.isSuccessful());
 
-                if (response.isSuccessful()) {
-                    Log.d("RegisterFragment", "Registration successful!");
-                    Toast.makeText(requireContext(), "Акаунт успішно створено!", Toast.LENGTH_SHORT).show();
-                    performAutoLogin(userName, password);
-                } else {
-                    Log.e("RegisterFragment", "Registration failed. Code: " + response.code() + ", Message: " + response.message());
-                    
-                    // Спробуємо отримати детальну інформацію про помилку
-                    String errorMessage = "Помилка реєстрації. Код: " + response.code();
-                    try {
-                        if (response.errorBody() != null) {
-                            String errorBody = response.errorBody().string();
-                            Log.e("RegisterFragment", "Error body: " + errorBody);
-                            if (errorBody.contains("already exists") || errorBody.contains("вже існує")) {
-                                errorMessage = "Користувач з таким логіном або нікнеймом вже існує";
+                    if (response.isSuccessful()) {
+                        Log.d("RegisterFragment", "Registration successful!");
+                        Toast.makeText(requireContext(), "Акаунт успішно створено!", Toast.LENGTH_SHORT).show();
+                        performAutoLogin(userName, password);
+                    } else {
+                        Log.e("RegisterFragment", "Registration failed. Code: " + response.code() + ", Message: " + response.message());
+
+                        // Спробуємо отримати детальну інформацію про помилку
+                        String errorMessage = "Помилка реєстрації. Код: " + response.code();
+                        try {
+                            if (response.errorBody() != null) {
+                                String errorBody = response.errorBody().string();
+                                Log.e("RegisterFragment", "Error body: " + errorBody);
+                                if (errorBody.contains("already exists") || errorBody.contains("вже існує")) {
+                                    errorMessage = "Користувач з таким логіном або нікнеймом вже існує";
+                                }
                             }
+                        } catch (Exception e) {
+                            Log.e("RegisterFragment", "Error reading error body", e);
                         }
-                    } catch (Exception e) {
-                        Log.e("RegisterFragment", "Error reading error body", e);
-                    }
-                    
-                    showError(errorMessage);
-                }
-            }
 
-            @Override
-            public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
-                showProgress(false);
-                Log.e("RegisterFragment", "Network error: " + t.getMessage(), t);
-                showError("Помилка мережі: " + t.getMessage());
-            }
-        });
+                        showError(errorMessage);
+                    }
+                }
+
+                @Override
+                public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
+                    showProgress(false);
+                    Log.e("RegisterFragment", "Network error: " + t.getMessage(), t);
+                    showError("Помилка мережі: " + t.getMessage());
+                }
+            });
         } catch (Exception e) {
             showProgress(false);
             Log.e("RegisterFragment", "Exception during API call setup", e);

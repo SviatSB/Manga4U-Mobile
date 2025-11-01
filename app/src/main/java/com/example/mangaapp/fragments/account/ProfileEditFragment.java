@@ -3,14 +3,16 @@ package com.example.mangaapp.fragments.account;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.drawable.AnimationDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.LayoutInflater;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
-import android.widget.AutoCompleteTextView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -53,20 +55,14 @@ public class ProfileEditFragment extends Fragment {
     private MaterialButton uploadAvatarButton;
     private MaterialButton removeAvatarButton;
     private TextInputLayout nicknameLayout;
-    private TextInputLayout loginLayout;
-    private TextInputLayout languageLayout;
     private TextInputLayout aboutLayout;
     private TextInputLayout currentPasswordLayout;
     private TextInputLayout newPasswordLayout;
-    private TextInputLayout confirmPasswordLayout;
 
     private TextInputEditText nicknameInput;
-    private TextInputEditText loginInput;
-    private AutoCompleteTextView languageInput;
     private TextInputEditText aboutInput;
     private TextInputEditText currentPasswordInput;
     private TextInputEditText newPasswordInput;
-    private TextInputEditText confirmPasswordInput;
 
     private MaterialButton saveButton;
     private MaterialButton cancelButton;
@@ -79,6 +75,9 @@ public class ProfileEditFragment extends Fragment {
     private String authToken;
     private Uri selectedImageUri;
     private Bitmap selectedImageBitmap;
+
+    // Анімація фону
+    private AnimationDrawable backgroundAnimation;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -99,6 +98,27 @@ public class ProfileEditFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        // Запускаємо анімацію фону після створення View
+        startBackgroundAnimation();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Перезапускаємо анімацію фону при поверненні на фрагмент
+        startBackgroundAnimation();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        // Зупиняємо анімацію фону
+        stopBackgroundAnimation();
+    }
+
     private void initViews(View view) {
         // Аватар
         avatarImageView = view.findViewById(R.id.avatar_image);
@@ -107,23 +127,17 @@ public class ProfileEditFragment extends Fragment {
 
         // Основні поля
         nicknameLayout = view.findViewById(R.id.nickname_layout);
-        loginLayout = view.findViewById(R.id.login_layout);
-        languageLayout = view.findViewById(R.id.language_layout);
         aboutLayout = view.findViewById(R.id.about_layout);
 
         nicknameInput = view.findViewById(R.id.nickname_input);
-        loginInput = view.findViewById(R.id.login_input);
-        languageInput = view.findViewById(R.id.language_input);
         aboutInput = view.findViewById(R.id.about_input);
 
         // Поля пароля
         currentPasswordLayout = view.findViewById(R.id.current_password_layout);
         newPasswordLayout = view.findViewById(R.id.new_password_layout);
-        confirmPasswordLayout = view.findViewById(R.id.confirm_password_layout);
 
         currentPasswordInput = view.findViewById(R.id.current_password_input);
         newPasswordInput = view.findViewById(R.id.new_password_input);
-        confirmPasswordInput = view.findViewById(R.id.confirm_password_input);
 
         // Кнопки
         saveButton = view.findViewById(R.id.btn_save);
@@ -131,22 +145,106 @@ public class ProfileEditFragment extends Fragment {
         progressBar = view.findViewById(R.id.progress_bar);
         errorText = view.findViewById(R.id.error_text);
 
-        // Налаштування мови
-        setupLanguageSpinner();
+        // Ініціалізація анімації фону
+        initBackgroundAnimation(view);
     }
 
-    private void setupLanguageSpinner() {
-        String[] languages = {"ua", "en", "ru", "de", "fr", "es", "it", "pt", "pl", "tr"};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(), 
-                android.R.layout.simple_dropdown_item_1line, languages);
-        languageInput.setAdapter(adapter);
+    private void initBackgroundAnimation(View view) {
+        try {
+            // Отримуємо фон з кореневого View (CoordinatorLayout)
+            View rootView = view.getRootView();
+            if (rootView != null) {
+                android.graphics.drawable.Drawable background = rootView.getBackground();
+                if (background instanceof AnimationDrawable) {
+                    backgroundAnimation = (AnimationDrawable) background;
+                    // Додаємо плавність анімації
+                    backgroundAnimation.setEnterFadeDuration(300);
+                    backgroundAnimation.setExitFadeDuration(300);
+                    Log.d("ProfileEditFragment", "Background animation initialized");
+                } else {
+                    Log.d("ProfileEditFragment", "Background is not AnimationDrawable: " +
+                            (background != null ? background.getClass().getSimpleName() : "null"));
+                }
+            }
+        } catch (Exception e) {
+            Log.e("ProfileEditFragment", "Error initializing background animation", e);
+        }
+    }
+
+    private void startBackgroundAnimation() {
+        if (backgroundAnimation != null && !backgroundAnimation.isRunning()) {
+            backgroundAnimation.start();
+            Log.d("ProfileEditFragment", "Background animation started");
+        } else {
+            // Якщо анімація не ініціалізована, спробуємо знайти її знову
+            View rootView = getView();
+            if (rootView != null) {
+                initBackgroundAnimation(rootView);
+                if (backgroundAnimation != null && !backgroundAnimation.isRunning()) {
+                    backgroundAnimation.start();
+                    Log.d("ProfileEditFragment", "Background animation started after re-initialization");
+                }
+            }
+        }
+    }
+
+    private void stopBackgroundAnimation() {
+        if (backgroundAnimation != null && backgroundAnimation.isRunning()) {
+            backgroundAnimation.stop();
+            Log.d("ProfileEditFragment", "Background animation stopped");
+        }
     }
 
     private void setupListeners() {
         uploadAvatarButton.setOnClickListener(v -> showImagePicker());
         removeAvatarButton.setOnClickListener(v -> removeAvatar());
         saveButton.setOnClickListener(v -> saveProfile());
-        cancelButton.setOnClickListener(v -> requireActivity().onBackPressed());
+
+        // Оновлений обробник для кнопки "Скасувати"
+        cancelButton.setOnClickListener(v -> {
+            try {
+                // Перевіряємо, чи є зміни
+                if (hasUnsavedChanges()) {
+                    showUnsavedChangesDialog();
+                } else {
+                    navigateBack();
+                }
+            } catch (Exception e) {
+                Log.e("ProfileEditFragment", "Error handling cancel", e);
+                navigateBack(); // Fallback
+            }
+        });
+    }
+
+    private boolean hasUnsavedChanges() {
+        String currentNickname = currentUser != null ? currentUser.getNickname() : "";
+        String currentAbout = currentUser != null ? currentUser.getAboutMyself() : "";
+
+        String newNickname = nicknameInput.getText() != null ? nicknameInput.getText().toString().trim() : "";
+        String newAbout = aboutInput.getText() != null ? aboutInput.getText().toString().trim() : "";
+
+        return !currentNickname.equals(newNickname) || !currentAbout.equals(newAbout) ||
+                selectedImageBitmap != null ||
+                (newPasswordInput.getText() != null && !newPasswordInput.getText().toString().isEmpty());
+    }
+
+    private void showUnsavedChangesDialog() {
+        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle("Незбережені зміни")
+                .setMessage("У вас є незбережені зміни. Ви дійсно хочете вийти?")
+                .setPositiveButton("Так", (dialog, which) -> navigateBack())
+                .setNegativeButton("Ні", null)
+                .show();
+    }
+
+    private void navigateBack() {
+        try {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigateUp(); // Це використає popExitAnim з nav_graph
+        } catch (Exception e) {
+            Log.e("ProfileEditFragment", "Error navigating back", e);
+            requireActivity().onBackPressed(); // Fallback
+        }
     }
 
     private void loadUserData() {
@@ -196,8 +294,6 @@ public class ProfileEditFragment extends Fragment {
     private void populateFields() {
         if (currentUser != null) {
             nicknameInput.setText(currentUser.getNickname());
-            loginInput.setText(currentUser.getLogin());
-            languageInput.setText(currentUser.getLanguage());
             aboutInput.setText(currentUser.getAboutMyself());
 
             // Завантаження аватара
@@ -269,18 +365,18 @@ public class ProfileEditFragment extends Fragment {
 
         // Валідація пароля (якщо введено)
         String newPassword = newPasswordInput.getText() != null ? newPasswordInput.getText().toString() : "";
-        String confirmPassword = confirmPasswordInput.getText() != null ? confirmPasswordInput.getText().toString() : "";
-        
+        String currentPassword = currentPasswordInput.getText() != null ? currentPasswordInput.getText().toString() : "";
+
         if (!newPassword.isEmpty()) {
             if (newPassword.length() < 8) {
                 newPasswordLayout.setError("Пароль повинен містити мінімум 8 символів");
                 isValid = false;
-            } else if (!newPassword.equals(confirmPassword)) {
-                confirmPasswordLayout.setError("Паролі не співпадають");
+            } else if (currentPassword.isEmpty()) {
+                currentPasswordLayout.setError("Введіть поточний пароль для зміни");
                 isValid = false;
             } else {
                 newPasswordLayout.setError(null);
-                confirmPasswordLayout.setError(null);
+                currentPasswordLayout.setError(null);
             }
         }
 
@@ -289,7 +385,7 @@ public class ProfileEditFragment extends Fragment {
 
     private void updateNickname() {
         String newNickname = nicknameInput.getText() != null ? nicknameInput.getText().toString().trim() : "";
-        
+
         AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
         Call<ResponseBody> call = apiService.changeNickname("Bearer " + authToken, newNickname);
 
@@ -297,7 +393,7 @@ public class ProfileEditFragment extends Fragment {
             @Override
             public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
                 if (response.isSuccessful()) {
-                    updateLanguage();
+                    updateAboutMyself();
                 } else {
                     showProgress(false);
                     showError("Помилка оновлення нікнейму");
@@ -312,34 +408,9 @@ public class ProfileEditFragment extends Fragment {
         });
     }
 
-    private void updateLanguage() {
-        String language = languageInput.getText() != null ? languageInput.getText().toString().trim() : "ua";
-        
-        AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
-        Call<ResponseBody> call = apiService.setLanguage("Bearer " + authToken, language);
-
-        call.enqueue(new Callback<ResponseBody>() {
-            @Override
-            public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
-                if (response.isSuccessful()) {
-                    updateAboutMyself();
-                } else {
-                    showProgress(false);
-                    showError("Помилка оновлення мови");
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
-                showProgress(false);
-                showError("Помилка мережі: " + t.getMessage());
-            }
-        });
-    }
-
     private void updateAboutMyself() {
         String about = aboutInput.getText() != null ? aboutInput.getText().toString().trim() : "";
-        
+
         AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
         Call<ResponseBody> call = apiService.setAboutMyself("Bearer " + authToken, about);
 
@@ -364,7 +435,7 @@ public class ProfileEditFragment extends Fragment {
 
     private void updatePassword() {
         String newPassword = newPasswordInput.getText() != null ? newPasswordInput.getText().toString() : "";
-        
+
         if (newPassword.isEmpty()) {
             updateAvatar();
             return;
@@ -372,7 +443,7 @@ public class ProfileEditFragment extends Fragment {
 
         String currentPassword = currentPasswordInput.getText() != null ? currentPasswordInput.getText().toString() : "";
         AccountApiService.ChangePasswordRequest request = new AccountApiService.ChangePasswordRequest(currentPassword, newPassword);
-        
+
         AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
         Call<ResponseBody> call = apiService.changePassword("Bearer " + authToken, request);
 
@@ -457,24 +528,24 @@ public class ProfileEditFragment extends Fragment {
     private void finishUpdate() {
         showProgress(false);
         Toast.makeText(requireContext(), "Профіль успішно оновлено!", Toast.LENGTH_SHORT).show();
-        
+
         // Оновлюємо дані в AuthManager
         authManager.refreshUserData(requireContext());
-        
+
         // Оновлюємо поточні дані користувача
         updateCurrentUserData();
-        
-        // Повертаємося назад
-        requireActivity().onBackPressed();
+
+        // Повертаємося назад через NavController
+        NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+        navController.navigateUp();
     }
-    
+
     private void updateCurrentUserData() {
         if (currentUser != null) {
             // Оновлюємо дані з полів форми
             currentUser.setNickname(nicknameInput.getText() != null ? nicknameInput.getText().toString().trim() : "");
             currentUser.setAboutMyself(aboutInput.getText() != null ? aboutInput.getText().toString().trim() : "");
-            currentUser.setLanguage(languageInput.getText() != null ? languageInput.getText().toString().trim() : "ua");
-            
+
             // Зберігаємо оновлені дані в AuthManager
             authManager.saveAuthData(authToken, currentUser);
         }

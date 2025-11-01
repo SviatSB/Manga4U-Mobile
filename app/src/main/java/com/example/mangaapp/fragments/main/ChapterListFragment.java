@@ -13,10 +13,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import android.util.Log;
 
-import com.example.mangaapp.api.MangaApiService;
-import com.example.mangaapp.R;
-import com.example.mangaapp.adapters.ChapterAdapter;
 import com.example.mangaapp.api.ApiClient;
+import com.example.mangaapp.adapters.ChapterAdapter;
+import com.example.mangaapp.MangaApiService;
+import com.example.mangaapp.R;
 
 import java.util.List;
 import java.util.ArrayList;

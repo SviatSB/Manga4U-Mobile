@@ -11,13 +11,30 @@
         android:label="@string/menu_home"
         tools:layout="@layout/fragment_home" />
 
-    
 
+
+    <!-- Account Fragment з action всередині -->
     <fragment
         android:id="@+id/nav_account"
         android:name="com.example.mangaapp.fragments.account.AccountFragment"
         android:label="@string/title_account"
-        tools:layout="@layout/fragment_account" />
+        tools:layout="@layout/fragment_account">
+
+        <action
+            android:id="@+id/action_account_to_profile_edit"
+            app:destination="@id/profileEditFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+
+    <!-- Profile Edit Fragment -->
+    <fragment
+        android:id="@+id/profileEditFragment"
+        android:name="com.example.mangaapp.fragments.account.ProfileEditFragment"
+        android:label="Редагування профілю"
+        tools:layout="@layout/fragment_profile_edit" />
 
     <fragment
         android:id="@+id/nav_manga_detail"
@@ -61,7 +78,7 @@
             app:argType="string" />
     </fragment>
 
-    <!-- Дії навігації -->
+    <!-- Інші дії навігації -->
     <action
         android:id="@+id/action_homeFragment_to_mangaDetailFragment"
         app:destination="@id/nav_manga_detail" />

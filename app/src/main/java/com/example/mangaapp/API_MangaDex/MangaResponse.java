@@ -24,13 +24,13 @@ public class MangaResponse {
         private List<Tag> tags;
 
         public Map<String, String> getTitle() { return title; }
-
+        public Map<String, String> getDescription() { return description; }
         public List<Tag> getTags() { return tags; }
     }
 
     public static class Title {
         private String en;
-
+        public String getEn() { return en; }
     }
 
     public static class Tag {

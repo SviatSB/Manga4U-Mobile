@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Dark theme specific colors -->
-    <color name="text_primary">@color/white</color>
-    <color name="text_secondary">@color/gray_400</color>
+    <color name="text_primary">@color/white_text</color>
+    <color name="text_secondary">@color/gray_text</color>
     <color name="text_tertiary">@color/gray_600</color>
-    <color name="background">@color/dark_background</color>
-    <color name="surface">@color/dark_surface</color>
+    <color name="background">@color/dark_gray_background</color>
+    <color name="surface">@color/dark_gray_surface</color>
     <color name="divider">@color/gray_600</color>
+    
+    <!-- Override primary colors for dark theme -->
+    <color name="primary">@color/purple_accent</color>
+    <color name="primary_dark">@color/purple_700</color>
+    <color name="primary_light">@color/purple_200</color>
 </resources>
