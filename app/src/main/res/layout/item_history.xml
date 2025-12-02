@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
+    app:cardBackgroundColor="#181520"
+    app:strokeColor="@color/purple_accent"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/history_manga_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Назва манги"
+            android:textColor="@color/white_text"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/history_chapter_info"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Глава 1: Назва глави"
+            android:textColor="@color/purple_accent"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/history_updated_at"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="18.11.2025 12:00"
+            android:textColor="@color/gray_text"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>
+

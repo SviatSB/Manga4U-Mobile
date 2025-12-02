@@ -4,6 +4,14 @@
     <selectionStates>
       <SelectionState runConfigName="Unnamed">
         <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2025-11-15T16:36:29.527077600Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\nikit\.android\avd\Pixel_5.avd" />
+            </handle>
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
       </SelectionState>
     </selectionStates>
   </component>

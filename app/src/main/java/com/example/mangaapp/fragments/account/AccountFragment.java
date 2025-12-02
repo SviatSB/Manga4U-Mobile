@@ -28,6 +28,7 @@ import com.example.mangaapp.api.UserDto;
 import com.example.mangaapp.api.AccountApiClient;
 import com.example.mangaapp.models.RecentManga;
 import com.example.mangaapp.models.User;
+import com.example.mangaapp.models.HistoryItem;
 import com.example.mangaapp.utils.AuthManager;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.imageview.ShapeableImageView;
@@ -35,6 +36,7 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import retrofit2.Call;
@@ -55,6 +57,7 @@ public class AccountFragment extends Fragment implements
     private TextView userNickname;
     private MaterialButton editProfileButton;
     private MaterialButton logoutButton;
+    private MaterialButton viewAllHistoryButton;
     private RecyclerView recentMangaRecycler;
 
     // Адаптери
@@ -65,6 +68,7 @@ public class AccountFragment extends Fragment implements
     private String authToken;
     private User currentUser;
     private List<RecentManga> recentMangaList;
+    private List<HistoryItem> historyList;
 
     // SharedPreferences
     private SharedPreferences prefs;
@@ -76,6 +80,7 @@ public class AccountFragment extends Fragment implements
         prefs = requireContext().getSharedPreferences("MangaAppPrefs", 0);
         authManager = AuthManager.getInstance(requireContext());
         recentMangaList = new ArrayList<>();
+        historyList = new ArrayList<>();
     }
 
     @Override
@@ -118,10 +123,14 @@ public class AccountFragment extends Fragment implements
         userNickname = view.findViewById(R.id.user_nickname);
         editProfileButton = view.findViewById(R.id.btn_edit_profile);
         logoutButton = view.findViewById(R.id.btn_logout);
+        viewAllHistoryButton = view.findViewById(R.id.btn_view_all_history);
         recentMangaRecycler = view.findViewById(R.id.recent_manga_recycler);
 
         editProfileButton.setOnClickListener(v -> openProfileEdit());
         logoutButton.setOnClickListener(v -> logout());
+        if (viewAllHistoryButton != null) {
+            viewAllHistoryButton.setOnClickListener(v -> openHistoryFragment());
+        }
     }
 
     private void setupViewPager() {
@@ -148,9 +157,8 @@ public class AccountFragment extends Fragment implements
 
     private void setupRecyclerView() {
         recentMangaAdapter = new RecentMangaAdapter(recentMangaList, manga -> {
-            // Обробка кліку по манзі - перехід до читання
-            // TODO: Реалізувати навігацію до ReaderFragment
-            Toast.makeText(requireContext(), "Перехід до: " + manga.getTitle(), Toast.LENGTH_SHORT).show();
+            // Навігація до останньої прочитаної глави
+            navigateToLastChapter(manga);
         });
 
         recentMangaRecycler.setLayoutManager(new LinearLayoutManager(requireContext()));
@@ -165,7 +173,7 @@ public class AccountFragment extends Fragment implements
 
             // Оновлюємо дані користувача з серверу
             loadUserProfile();
-            loadRecentManga();
+            loadHistory();
             showLoggedInState();
         } else {
             // Користувач не авторизований
@@ -244,28 +252,190 @@ public class AccountFragment extends Fragment implements
         return user;
     }
 
-    private void loadRecentManga() {
+    private void loadHistory() {
+        if (authToken == null) {
+            Log.e("AccountFragment", "Auth token is null, cannot load history");
+            return;
+        }
+        
         AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
-        Call<List<RecentManga>> call = apiService.getRecentManga(authToken, 10);
+        Call<List<HistoryItem>> call = apiService.getHistory("Bearer " + authToken);
+        Log.d("AccountFragment", "Requesting history with token: " + (authToken != null ? "present" : "null"));
 
-        call.enqueue(new Callback<List<RecentManga>>() {
+        call.enqueue(new Callback<List<HistoryItem>>() {
             @Override
-            public void onResponse(@NonNull Call<List<RecentManga>> call, @NonNull Response<List<RecentManga>> response) {
+            public void onResponse(@NonNull Call<List<HistoryItem>> call, @NonNull Response<List<HistoryItem>> response) {
                 if (response.isSuccessful() && response.body() != null) {
+                    historyList.clear();
+                    historyList.addAll(response.body());
+                    Log.d("AccountFragment", "Loaded " + historyList.size() + " history items");
+                    
+                    // Конвертуємо історію в RecentManga для відображення (останні 4)
                     recentMangaList.clear();
-                    recentMangaList.addAll(response.body());
-                    recentMangaAdapter.notifyDataSetChanged();
+                    int count = Math.min(4, historyList.size());
+                    Log.d("AccountFragment", "Converting " + count + " items to RecentManga");
+                    
+                    for (int i = 0; i < count; i++) {
+                        HistoryItem item = historyList.get(i);
+                        Log.d("AccountFragment", "Item " + i + ": " + item.getMangaName() + ", Chapter: " + item.getLastChapterNumber());
+                        
+                        // Конвертуємо дату
+                        Date lastReadAt = null;
+                        if (item.getUpdatedAt() != null && !item.getUpdatedAt().isEmpty()) {
+                            try {
+                                // Формат: "2025-11-18T09:32:46.4602245" або "2025-11-18T09:32:46"
+                                String dateStr = item.getUpdatedAt();
+                                if (dateStr.contains(".")) {
+                                    dateStr = dateStr.substring(0, dateStr.indexOf("."));
+                                }
+                                if (dateStr.contains("+")) {
+                                    dateStr = dateStr.substring(0, dateStr.indexOf("+"));
+                                }
+                                java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault());
+                                lastReadAt = sdf.parse(dateStr);
+                            } catch (Exception e) {
+                                Log.e("AccountFragment", "Error parsing date: " + item.getUpdatedAt(), e);
+                            }
+                        }
+                        
+                        // Створюємо RecentManga з даних історії
+                        RecentManga recentManga = new RecentManga(
+                            item.getMangaExternalId(),
+                            item.getMangaName(),
+                            null, // coverUrl - потрібно завантажити окремо
+                            item.getLastChapterTitle() != null ? item.getLastChapterTitle() : "",
+                            String.valueOf(item.getLastChapterNumber()),
+                            0, // currentPage - не зберігається в історії
+                            0, // totalPages - не зберігається в історії
+                            lastReadAt,
+                            item.getMangaExternalId(),
+                            item.getLastChapterId()
+                        );
+                        recentMangaList.add(recentManga);
+                    }
+                    
+                    Log.d("AccountFragment", "Converted " + recentMangaList.size() + " items, notifying adapter");
+                    
+                    // Перевіряємо, чи RecyclerView ініціалізований
+                    if (recentMangaRecycler != null && recentMangaAdapter != null) {
+                        recentMangaAdapter.notifyDataSetChanged();
+                        recentMangaRecycler.setVisibility(recentMangaList.isEmpty() ? View.GONE : View.VISIBLE);
+                        Log.d("AccountFragment", "RecyclerView visibility: " + (recentMangaList.isEmpty() ? "GONE" : "VISIBLE"));
+                    } else {
+                        Log.e("AccountFragment", "RecyclerView or adapter is null!");
+                    }
+
+                    // Завантажуємо обкладинки для recent items (обмежимося кількістю елементів)
+                    try {
+                        com.example.mangaapp.MangaApiService mangaApi = com.example.mangaapp.api.ApiClient.getClient().create(com.example.mangaapp.MangaApiService.class);
+                        java.util.List<String> includes = new java.util.ArrayList<>();
+                        includes.add("cover_art");
+
+                        for (int i = 0; i < recentMangaList.size(); i++) {
+                            final int idx = i;
+                            RecentManga rm = recentMangaList.get(i);
+                            if (rm.getCoverUrl() != null && !rm.getCoverUrl().isEmpty()) continue; // вже є
+
+                            String path = "manga/" + rm.getId();
+                            Call<com.example.mangaapp.API_MangaDex.MangaDetail> detailsCall = mangaApi.getMangaDetails(path, includes);
+                            detailsCall.enqueue(new Callback<com.example.mangaapp.API_MangaDex.MangaDetail>() {
+                                @Override
+                                public void onResponse(Call<com.example.mangaapp.API_MangaDex.MangaDetail> call, Response<com.example.mangaapp.API_MangaDex.MangaDetail> response) {
+                                    if (response.isSuccessful() && response.body() != null) {
+                                        com.example.mangaapp.API_MangaDex.MangaDetail body = response.body();
+                                        if (body.getData() != null && body.getData().getRelationships() != null) {
+                                            String coverFileName = null;
+                                            String mangaId = body.getData().getId();
+                                            for (com.example.mangaapp.API_MangaDex.MangaResponse.Relationship rel : body.getData().getRelationships()) {
+                                                if ("cover_art".equals(rel.getType()) && rel.getAttributes() != null) {
+                                                    coverFileName = rel.getAttributes().getFileName();
+                                                    break;
+                                                }
+                                            }
+                                            if (coverFileName != null) {
+                                                String coverUrl = "https://uploads.mangadex.org/covers/" + mangaId + "/" + coverFileName;
+                                                // Оновлюємо об'єкт RecentManga у списку
+                                                try {
+                                                    RecentManga target = recentMangaList.get(idx);
+                                                    target.setCoverUrl(coverUrl);
+                                                } catch (Exception ex) {
+                                                    Log.e("AccountFragment", "Error setting cover url", ex);
+                                                }
+                                                // Оновлюємо адаптер (тільки один елемент)
+                                                if (recentMangaRecycler != null && recentMangaAdapter != null) {
+                                                    requireActivity().runOnUiThread(() -> recentMangaAdapter.notifyItemChanged(idx));
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(Call<com.example.mangaapp.API_MangaDex.MangaDetail> call, Throwable t) {
+                                    Log.e("AccountFragment", "Failed to load manga details for cover", t);
+                                }
+                            });
+                        }
+                    } catch (Exception e) {
+                        Log.e("AccountFragment", "Error loading covers for recent items", e);
+                    }
+                    
+                    // Показуємо/ховаємо кнопку "Переглянути всі"
+                    if (viewAllHistoryButton != null) {
+                        viewAllHistoryButton.setVisibility(historyList.size() > 4 ? View.VISIBLE : View.GONE);
+                    }
+                } else {
+                    Log.e("AccountFragment", "Error loading history: " + response.code());
+                    if (response.errorBody() != null) {
+                        try {
+                            Log.e("AccountFragment", "Error body: " + response.errorBody().string());
+                        } catch (Exception e) {
+                            Log.e("AccountFragment", "Error reading error body", e);
+                        }
+                    }
                 }
             }
 
             @Override
-            public void onFailure(@NonNull Call<List<RecentManga>> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<List<HistoryItem>> call, @NonNull Throwable t) {
+                Log.e("AccountFragment", "Error loading history", t);
                 // Помилка мережі - показуємо кешовані дані
                 if (!recentMangaList.isEmpty()) {
                     recentMangaAdapter.notifyDataSetChanged();
                 }
             }
         });
+    }
+    
+    private void openHistoryFragment() {
+        try {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.action_account_to_history);
+            Log.d("AccountFragment", "Navigating to HistoryFragment");
+        } catch (Exception e) {
+            Log.e("AccountFragment", "Error navigating to HistoryFragment", e);
+            Toast.makeText(requireContext(), "Помилка відкриття історії", Toast.LENGTH_SHORT).show();
+        }
+    }
+    
+    private void navigateToLastChapter(RecentManga manga) {
+        if (manga.getChapterId() == null || manga.getMangaId() == null) {
+            Toast.makeText(requireContext(), "Помилка: не вдалося знайти главу", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        
+        try {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            Bundle bundle = new Bundle();
+            bundle.putString("chapterId", manga.getChapterId());
+            bundle.putString("mangaId", manga.getMangaId());
+            bundle.putString("mangaTitle", manga.getTitle());
+            navController.navigate(R.id.nav_reader, bundle);
+            Log.d("AccountFragment", "Navigating to ReaderFragment with chapter: " + manga.getChapterId());
+        } catch (Exception e) {
+            Log.e("AccountFragment", "Error navigating to ReaderFragment", e);
+            Toast.makeText(requireContext(), "Помилка відкриття глави", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void updateUserInfo() {
@@ -298,16 +468,44 @@ public class AccountFragment extends Fragment implements
             }
 
             // Завантаження аватара користувача
-            if (currentUser.getAvatarUrl() != null && !currentUser.getAvatarUrl().isEmpty()) {
+            String avatarUrl = currentUser.getAvatarUrl();
+            Log.d("AccountFragment", "Avatar URL: " + avatarUrl);
+            
+            // Спочатку встановлюємо placeholder
+            userAvatar.setImageResource(R.drawable.ic_person);
+            
+            if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                Log.d("AccountFragment", "Loading avatar from URL: " + avatarUrl);
                 Glide.with(this)
-                        .load(currentUser.getAvatarUrl())
+                        .load(avatarUrl)
                         .placeholder(R.drawable.ic_person)
                         .error(R.drawable.ic_person)
+                        .fallback(R.drawable.ic_person)
+                        .centerCrop()
+                        .circleCrop()
+                        .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                            @Override
+                            public boolean onLoadFailed(@Nullable com.bumptech.glide.load.engine.GlideException e, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, boolean isFirstResource) {
+                                if (e != null) {
+                                    Log.e("AccountFragment", "Failed to load avatar: " + e.getMessage());
+                                    for (Throwable cause : e.getRootCauses()) {
+                                        Log.e("AccountFragment", "Cause: " + cause.getMessage(), cause);
+                                    }
+                                } else {
+                                    Log.e("AccountFragment", "Failed to load avatar: unknown error");
+                                }
+                                return false;
+                            }
+
+                            @Override
+                            public boolean onResourceReady(android.graphics.drawable.Drawable resource, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, com.bumptech.glide.load.DataSource dataSource, boolean isFirstResource) {
+                                Log.d("AccountFragment", "Avatar loaded successfully from: " + model);
+                                return false;
+                            }
+                        })
                         .into(userAvatar);
             } else {
-                // Показуємо стандартну аватарку
-                userAvatar.setImageResource(R.drawable.ic_person);
-                userAvatar.setBackgroundResource(R.drawable.bg_gradient_1);
+                Log.d("AccountFragment", "Avatar URL is empty, using placeholder");
             }
         }
     }
@@ -347,8 +545,11 @@ public class AccountFragment extends Fragment implements
 
         // Завантажуємо дані користувача
         loadUserProfile();
-        loadRecentManga();
+        loadHistory();
         showLoggedInState();
+
+        // Навігація до AccountFragment після успішного входу
+        navigateToAccount();
 
         Log.d("AccountFragment", "Login success - showing logged in state");
     }
@@ -364,8 +565,11 @@ public class AccountFragment extends Fragment implements
 
         // Завантажуємо дані користувача
         loadUserProfile();
-        loadRecentManga();
+        loadHistory();
         showLoggedInState();
+
+        // Навігація до AccountFragment після успішної реєстрації
+        navigateToAccount();
 
         Log.d("AccountFragment", "Register success - showing logged in state");
     }
@@ -387,8 +591,8 @@ public class AccountFragment extends Fragment implements
                 public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
                     // Прогрес оновлено
                     if (response.isSuccessful()) {
-                        // Оновлюємо список останніх манг
-                        loadRecentManga();
+                        // Оновлюємо список історії
+                        loadHistory();
                     }
                 }
 
@@ -398,6 +602,27 @@ public class AccountFragment extends Fragment implements
                     Log.e("AccountFragment", "Error updating reading progress", t);
                 }
             });
+        }
+    }
+
+    private void navigateToAccount() {
+        try {
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            
+            // Перевіряємо, чи вже знаходимося на AccountFragment
+            int currentDestination = navController.getCurrentDestination() != null ? 
+                    navController.getCurrentDestination().getId() : -1;
+            
+            // Якщо не на AccountFragment, виконуємо навігацію
+            if (currentDestination != R.id.nav_account) {
+                navController.navigate(R.id.nav_account);
+                Log.d("AccountFragment", "Navigating to AccountFragment after login/register");
+            } else {
+                Log.d("AccountFragment", "Already on AccountFragment, no navigation needed");
+            }
+        } catch (Exception e) {
+            Log.e("AccountFragment", "Error navigating to AccountFragment", e);
+            // Не показуємо Toast, бо це не критична помилка
         }
     }
 

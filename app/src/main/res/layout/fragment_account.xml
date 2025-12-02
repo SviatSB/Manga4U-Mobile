@@ -160,10 +160,7 @@
                                         android:layout_width="match_parent"
                                         android:layout_height="match_parent"
                                         android:scaleType="centerCrop"
-                                        android:src="@drawable/ic_person"
-                                        android:background="@drawable/bg_gradient_1"
-                                        android:padding="8dp"
-                                        android:tint="@color/white_text" />
+                                        android:contentDescription="User avatar" />
 
                                 </com.google.android.material.card.MaterialCardView>
 
@@ -426,6 +423,19 @@
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
                                 android:nestedScrollingEnabled="false" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_view_all_history"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="16dp"
+                                android:text="Переглянути всі"
+                                android:textSize="14sp"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                app:strokeColor="@color/purple_accent"
+                                app:strokeWidth="1dp"
+                                android:textColor="@color/purple_accent"
+                                app:cornerRadius="12dp" />
 
                         </LinearLayout>
 

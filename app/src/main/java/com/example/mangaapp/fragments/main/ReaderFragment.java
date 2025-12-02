@@ -30,6 +30,10 @@ import com.example.mangaapp.API_MangaDex.AtHomeServerResponse;
 import com.example.mangaapp.API_MangaDex.ChapterFeedResponse;
 import com.example.mangaapp.api.ApiClient;
 import com.example.mangaapp.MangaApiService;
+import com.example.mangaapp.api.AccountApiService;
+import com.example.mangaapp.api.AccountApiClient;
+import com.example.mangaapp.utils.AuthManager;
+import okhttp3.ResponseBody;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,6 +77,8 @@ public class ReaderFragment extends Fragment {
     private int currentChapterIndex = 0;
     private String currentChapterTitle = "";
     private String currentChapterNumber = "";
+    private String mangaTitle = "";
+    private AuthManager authManager;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -80,8 +86,11 @@ public class ReaderFragment extends Fragment {
         if (getArguments() != null) {
             mangaId = getArguments().getString("mangaId");
             chapterId = getArguments().getString("chapterId");
+            mangaTitle = getArguments().getString("mangaTitle", "");
             Log.e("MangaApp", "[ReaderFragment] Created with mangaId: " + mangaId + ", chapterId: " + chapterId);
         }
+        
+        authManager = AuthManager.getInstance(requireContext());
 
         SharedPreferences prefs = requireContext().getSharedPreferences("MangaAppPrefs", Context.MODE_PRIVATE);
         readingMode = prefs.getString("reading_mode", "horizontal");
@@ -364,6 +373,8 @@ public class ReaderFragment extends Fragment {
             }
             
             updateChapterInfo();
+            // Оновлюємо історію при переході на нову главу
+            updateHistory();
         }
     }
 
@@ -387,7 +398,7 @@ public class ReaderFragment extends Fragment {
         langs.add("ru");
         langs.add("ja");
         
-        Call<ChapterFeedResponse> call = apiService.getMangaChapters(mangaId, 100, 0, "asc", langs);
+        Call<ChapterFeedResponse> call = apiService.getMangaChapters("manga/" + mangaId + "/feed", 100, 0, "asc", langs);
         call.enqueue(new Callback<ChapterFeedResponse>() {
             @Override
             public void onResponse(Call<ChapterFeedResponse> call, Response<ChapterFeedResponse> response) {
@@ -514,13 +525,13 @@ public class ReaderFragment extends Fragment {
         Log.e("MangaApp", "[ReaderFragment] Loading chapter: " + chapterId);
 
         MangaApiService service = ApiClient.getClient().create(MangaApiService.class);
-        service.getChapterDetails(chapterId).enqueue(new Callback<Chapter>() {
+        service.getChapterDetails("chapter/" + chapterId).enqueue(new Callback<Chapter>() {
             @Override
             public void onResponse(@NonNull Call<Chapter> call, @NonNull Response<Chapter> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     Chapter chapter = response.body();
                     if (chapter.getData() != null && chapter.getData().getAttributes() != null) {
-                        service.getAtHomeServer(chapterId).enqueue(new Callback<AtHomeServerResponse>() {
+                        service.getAtHomeServer("at-home/server/" + chapterId).enqueue(new Callback<AtHomeServerResponse>() {
                             @Override
                             public void onResponse(@NonNull Call<AtHomeServerResponse> call, @NonNull Response<AtHomeServerResponse> response) {
                                 if (response.isSuccessful() && response.body() != null) {
@@ -547,6 +558,9 @@ public class ReaderFragment extends Fragment {
                                         int initialPage = Math.min(currentPage, imageUrls.size() - 1);
                                         initialPage = Math.max(initialPage, 0);
                                         viewPager.setCurrentItem(initialPage, false);
+                                        
+                                        // Оновлюємо історію після завантаження глави
+                                        updateHistory();
                                         currentPage = initialPage;
                                         Log.e("MangaApp", "[ReaderFragment] Set initial page in ViewPager2: " + currentPage);
                                     }
@@ -616,6 +630,94 @@ public class ReaderFragment extends Fragment {
     private void saveCurrentPage() {
         SharedPreferences prefs = requireContext().getSharedPreferences("MangaAppPrefs", Context.MODE_PRIVATE);
         prefs.edit().putInt("last_page_" + chapterId, currentPage).apply();
+    }
+    
+    private void updateHistory() {
+        if (!authManager.isLoggedIn() || mangaId == null || chapterId == null) {
+            return;
+        }
+        
+        String token = authManager.getAuthToken();
+        if (token == null) {
+            return;
+        }
+        
+        // Отримуємо мову з SharedPreferences
+        SharedPreferences prefs = requireContext().getSharedPreferences("MangaAppPrefs", Context.MODE_PRIVATE);
+        String language = prefs.getString("selected_language", "en");
+        
+        // Конвертуємо номер глави в int
+        int chapterNumber = 1; // Значення за замовчуванням (валідатор вимагає > 0)
+        try {
+            if (currentChapterNumber != null && !currentChapterNumber.isEmpty()) {
+                // Можливо формат "1.5" або "1", потрібно обробити
+                String[] parts = currentChapterNumber.split("\\.");
+                float num = Float.parseFloat(parts[0]);
+                chapterNumber = (int) num;
+                if (chapterNumber <= 0) {
+                    chapterNumber = 1; // Якщо отримали 0 або менше, використовуємо 1
+                }
+            }
+        } catch (NumberFormatException e) {
+            Log.e("ReaderFragment", "Error parsing chapter number: " + currentChapterNumber, e);
+            chapterNumber = 1; // Якщо не вдалося розпарсити, використовуємо 1
+        }
+        
+        String chapterTitle = currentChapterTitle != null && !currentChapterTitle.isEmpty() ? currentChapterTitle : "Перегляд манги";
+        
+        // Перевірка на null/порожні значення
+        if (mangaId == null || mangaId.isEmpty()) {
+            Log.e("ReaderFragment", "MangaId is null or empty, cannot update history");
+            return;
+        }
+        if (chapterId == null || chapterId.isEmpty()) {
+            Log.e("ReaderFragment", "ChapterId is null or empty, cannot update history");
+            return;
+        }
+        if (language == null || language.isEmpty()) {
+            language = "en"; // Значення за замовчуванням
+        }
+        
+        Log.d("ReaderFragment", "Updating history with:");
+        Log.d("ReaderFragment", "  MangaId: " + mangaId);
+        Log.d("ReaderFragment", "  ChapterId: " + chapterId);
+        Log.d("ReaderFragment", "  Language: " + language);
+        Log.d("ReaderFragment", "  ChapterTitle: " + chapterTitle);
+        Log.d("ReaderFragment", "  ChapterNumber: " + chapterNumber);
+        
+        AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
+        AccountApiService.UpdateHistoryRequest request = new AccountApiService.UpdateHistoryRequest(
+            mangaId,
+            chapterId,
+            language,
+            chapterTitle,
+            chapterNumber
+        );
+        
+        Call<ResponseBody> call = apiService.updateHistory("Bearer " + token, request);
+        call.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
+                if (response.isSuccessful()) {
+                    Log.d("ReaderFragment", "History updated successfully - Status: " + response.code());
+                } else {
+                    Log.e("ReaderFragment", "Error updating history: " + response.code());
+                    if (response.errorBody() != null) {
+                        try {
+                            String errorBody = response.errorBody().string();
+                            Log.e("ReaderFragment", "Error body: " + errorBody);
+                        } catch (Exception e) {
+                            Log.e("ReaderFragment", "Error reading error body", e);
+                        }
+                    }
+                }
+            }
+            
+            @Override
+            public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
+                Log.e("ReaderFragment", "Error updating history", t);
+            }
+        });
     }
 
     private void showError(String message) {

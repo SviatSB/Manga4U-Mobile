@@ -1,73 +1,75 @@
 package com.example.mangaapp.api;
 
-import org.json.JSONObject;
+import android.util.Log;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
-import okhttp3.FormBody;
+import java.security.cert.CertificateException;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
-    private static final String BASE_URL = "https://api.mangadex.org/";
-    private static final String CLIENT_ID = "personal-client-d27951fb-afab-46d4-8f5f-29e3befb1e7e-506f08f0";
-    private static final String CLIENT_SECRET = "9jyoll7Ngo8Tu8grwcoWKrdON1FhFuIU";
+    // URL для сервера (використовуємо той самий, що й для AccountApiClient)
+    private static final String BASE_URL = "https://10.0.2.2:7220/";
 
     private static Retrofit retrofit = null;
 
     public static Retrofit getClient() {
         if (retrofit == null) {
-            OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                    .addInterceptor(chain -> {
-                        Request original = chain.request();
-                        Request request = original.newBuilder()
-                                .header("Authorization", "Bearer " + getAccessToken())
-                                .build();
-                        return chain.proceed(request);
-                    })
-                    .hostnameVerifier((hostname, session) -> true) //add
-                    .build();
+            Log.d("ApiClient", "Creating Retrofit client with BASE_URL: " + BASE_URL);
+
+            Gson gson = new GsonBuilder()
+                    .setLenient()
+                    .create();
 
             retrofit = new Retrofit.Builder()
                     .baseUrl(BASE_URL)
-                    .client(okHttpClient)
-                    .addConverterFactory(GsonConverterFactory.create())
+                    .client(getUnsafeOkHttpClient())
+                    .addConverterFactory(GsonConverterFactory.create(gson))
                     .build();
         }
         return retrofit;
     }
 
-    private static String getAccessToken() {
-        // Реалізуйте логіку отримання токена за допомогою вашого client_id та client_secret
-        // Це може бути синхронний запит або збережений токен
-        return "your-access-token";
-    }
-    private static String fetchAccessToken() {
+    private static OkHttpClient getUnsafeOkHttpClient() {
         try {
-            OkHttpClient client = new OkHttpClient();
+            // Create a trust manager that does not validate certificate chains
+            final TrustManager[] trustAllCerts = new TrustManager[]{
+                    new X509TrustManager() {
+                        @Override
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
+                        }
 
-            RequestBody formBody = new FormBody.Builder()
-                    .add("grant_type", "client_credentials")
-                    .add("client_id", CLIENT_ID)
-                    .add("client_secret", CLIENT_SECRET)
-                    .build();
+                        @Override
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) throws CertificateException {
+                        }
 
-            Request request = new Request.Builder()
-                    .url("https://auth.mangadex.org/realms/mangadex/protocol/openid-connect/token")
-                    .post(formBody)
-                    .build();
+                        @Override
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                            return new java.security.cert.X509Certificate[]{};
+                        }
+                    }
+            };
 
-            Response response = client.newCall(request).execute();
-            if (response.isSuccessful()) {
-                String json = response.body().string();
-                JSONObject jsonObject = new JSONObject(json);
-                return jsonObject.getString("access_token");
-            }
+            // Install the all-trusting trust manager
+            final SSLContext sslContext = SSLContext.getInstance("SSL");
+            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+            // Create an ssl socket factory with our all-trusting manager
+            final SSLSocketFactory sslSocketFactory = sslContext.getSocketFactory();
+
+            OkHttpClient.Builder builder = new OkHttpClient.Builder();
+            builder.sslSocketFactory(sslSocketFactory, (X509TrustManager) trustAllCerts[0]);
+            builder.hostnameVerifier((hostname, session) -> true);
+
+            return builder.build();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        return null;
     }
 }

@@ -87,14 +87,17 @@ public class RecentMangaAdapter extends RecyclerView.Adapter<RecentMangaAdapter.
             mangaChapter.setText(manga.getChapterInfo());
 
             // Прогрес читання
-            mangaProgress.setText(manga.getProgressText());
-
-            // Прогрес бар
+            // Прогрес читання і прогрес бар: показуємо тільки якщо відомі сторінки
             if (manga.getTotalPages() > 0) {
+                mangaProgress.setVisibility(View.VISIBLE);
+                progressBar.setVisibility(View.VISIBLE);
+                mangaProgress.setText(manga.getProgressText());
                 int progress = (manga.getCurrentPage() * 100) / manga.getTotalPages();
                 progressBar.setProgress(progress);
             } else {
-                progressBar.setProgress(0);
+                // Якщо немає інформації про сторінки, ховаємо дублюючу інформацію і смужку
+                mangaProgress.setVisibility(View.GONE);
+                progressBar.setVisibility(View.GONE);
             }
 
             // Час останнього читання

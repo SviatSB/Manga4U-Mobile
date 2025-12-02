@@ -63,12 +63,12 @@
                         android:id="@+id/avatar_image"
                         android:layout_width="120dp"
                         android:layout_height="120dp"
-                        android:src="@drawable/ic_person"
                         android:background="@color/dark_gray_input"
                         android:padding="24dp"
-                        android:tint="@color/gray_text"
                         app:shapeAppearanceOverlay="@style/CircleImageView"
-                        android:layout_marginBottom="20dp" />
+                        android:layout_marginBottom="20dp"
+                        android:scaleType="centerCrop"
+                        android:contentDescription="User avatar" />
 
                     <!-- Кнопки аватара -->
                     <LinearLayout
@@ -269,6 +269,7 @@
                             app:hintTextColor="@color/gray_text"
                             app:boxBackgroundColor="@color/dark_gray_input"
                             android:textColorHint="@color/gray_text"
+                            app:endIconMode="password_toggle"
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                             <com.google.android.material.textfield.TextInputEditText
@@ -306,6 +307,7 @@
                             app:hintTextColor="@color/gray_text"
                             app:boxBackgroundColor="@color/dark_gray_input"
                             android:textColorHint="@color/gray_text"
+                            app:endIconMode="password_toggle"
                             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
                             <com.google.android.material.textfield.TextInputEditText

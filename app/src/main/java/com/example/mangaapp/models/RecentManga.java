@@ -80,6 +80,9 @@ public class RecentManga {
     }
 
     public String getProgressText() {
-        return "Сторінка " + currentPage + " з " + totalPages;
+        if (totalPages > 0) {
+            return "Сторінка " + currentPage + " з " + totalPages;
+        }
+        return "Глава " + chapterNumber;
     }
 }

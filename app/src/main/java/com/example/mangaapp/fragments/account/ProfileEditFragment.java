@@ -297,12 +297,44 @@ public class ProfileEditFragment extends Fragment {
             aboutInput.setText(currentUser.getAboutMyself());
 
             // Завантаження аватара
-            if (currentUser.getAvatarUrl() != null && !currentUser.getAvatarUrl().isEmpty()) {
+            String avatarUrl = currentUser.getAvatarUrl();
+            Log.d("ProfileEditFragment", "Avatar URL: " + avatarUrl);
+            
+            // Спочатку встановлюємо placeholder
+            avatarImageView.setImageResource(R.drawable.ic_person);
+            
+            if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                Log.d("ProfileEditFragment", "Loading avatar from URL: " + avatarUrl);
                 Glide.with(this)
-                        .load(currentUser.getAvatarUrl())
+                        .load(avatarUrl)
                         .placeholder(R.drawable.ic_person)
                         .error(R.drawable.ic_person)
+                        .fallback(R.drawable.ic_person)
+                        .centerCrop()
+                        .circleCrop()
+                        .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                            @Override
+                            public boolean onLoadFailed(@Nullable com.bumptech.glide.load.engine.GlideException e, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, boolean isFirstResource) {
+                                if (e != null) {
+                                    Log.e("ProfileEditFragment", "Failed to load avatar: " + e.getMessage());
+                                    for (Throwable cause : e.getRootCauses()) {
+                                        Log.e("ProfileEditFragment", "Cause: " + cause.getMessage(), cause);
+                                    }
+                                } else {
+                                    Log.e("ProfileEditFragment", "Failed to load avatar: unknown error");
+                                }
+                                return false;
+                            }
+
+                            @Override
+                            public boolean onResourceReady(android.graphics.drawable.Drawable resource, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, com.bumptech.glide.load.DataSource dataSource, boolean isFirstResource) {
+                                Log.d("ProfileEditFragment", "Avatar loaded successfully from: " + model);
+                                return false;
+                            }
+                        })
                         .into(avatarImageView);
+            } else {
+                Log.d("ProfileEditFragment", "Avatar URL is empty, using placeholder");
             }
         }
     }
@@ -451,10 +483,40 @@ public class ProfileEditFragment extends Fragment {
             @Override
             public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
                 if (response.isSuccessful()) {
+                    // Очищаємо помилки при успішній зміні
+                    currentPasswordLayout.setError(null);
+                    newPasswordLayout.setError(null);
                     updateAvatar();
                 } else {
                     showProgress(false);
-                    showError("Помилка зміни пароля");
+                    
+                    // Перевіряємо код відповіді та текст помилки
+                    String errorMessage = "Помилка зміни пароля";
+                    try {
+                        if (response.errorBody() != null) {
+                            String errorBody = response.errorBody().string();
+                            Log.e("ProfileEditFragment", "Password change error: " + errorBody);
+                            
+                            // Якщо помилка пов'язана з невірним поточним паролем
+                            if (response.code() == 400 || response.code() == 401) {
+                                if (errorBody.contains("current password") || errorBody.contains("поточний пароль") || 
+                                    errorBody.contains("неверный") || errorBody.contains("невірний") ||
+                                    errorBody.contains("incorrect") || errorBody.contains("wrong")) {
+                                    currentPasswordLayout.setError("Невірно введений поточний пароль");
+                                    errorMessage = "Невірно введений поточний пароль";
+                                } else {
+                                    currentPasswordLayout.setError(null);
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.e("ProfileEditFragment", "Error reading error body", e);
+                    }
+                    
+                    // Якщо не встановили помилку для поточного пароля, показуємо загальну помилку
+                    if (currentPasswordLayout.getError() == null) {
+                        showError(errorMessage);
+                    }
                 }
             }
 
@@ -476,20 +538,24 @@ public class ProfileEditFragment extends Fragment {
 
     private void uploadAvatar() {
         try {
-            // Конвертуємо Bitmap в файл
-            File imageFile = createImageFile();
+            // Конвертуємо Bitmap в байти
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             selectedImageBitmap.compress(Bitmap.CompressFormat.JPEG, 80, bos);
             byte[] bitmapData = bos.toByteArray();
+            bos.close();
 
-            FileOutputStream fos = new FileOutputStream(imageFile);
-            fos.write(bitmapData);
-            fos.flush();
-            fos.close();
-
-            // Створюємо MultipartBody.Part
-            RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), imageFile);
-            MultipartBody.Part avatarPart = MultipartBody.Part.createFormData("file", imageFile.getName(), requestFile);
+            // Створюємо RequestBody для файлу
+            RequestBody requestFile = RequestBody.create(
+                    okhttp3.MediaType.parse("image/jpeg"), 
+                    bitmapData
+            );
+            
+            // Створюємо MultipartBody.Part з правильним ім'ям поля "file"
+            MultipartBody.Part avatarPart = MultipartBody.Part.createFormData(
+                    "file", 
+                    "avatar.jpg", 
+                    requestFile
+            );
 
             AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
             Call<ResponseBody> call = apiService.changeAvatar("Bearer " + authToken, avatarPart);
@@ -498,16 +564,29 @@ public class ProfileEditFragment extends Fragment {
                 @Override
                 public void onResponse(@NonNull Call<ResponseBody> call, @NonNull Response<ResponseBody> response) {
                     if (response.isSuccessful()) {
-                        finishUpdate();
+                        Log.d("ProfileEditFragment", "Avatar uploaded successfully");
+                        // Оновлюємо дані користувача після успішного завантаження аватара
+                        refreshUserData();
                     } else {
                         showProgress(false);
-                        showError("Помилка завантаження аватара");
+                        String errorMessage = "Помилка завантаження аватара";
+                        try {
+                            if (response.errorBody() != null) {
+                                String errorBody = response.errorBody().string();
+                                Log.e("ProfileEditFragment", "Avatar upload error: " + errorBody);
+                                errorMessage = "Помилка завантаження аватара: " + response.code();
+                            }
+                        } catch (Exception e) {
+                            Log.e("ProfileEditFragment", "Error reading error body", e);
+                        }
+                        showError(errorMessage);
                     }
                 }
 
                 @Override
                 public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
                     showProgress(false);
+                    Log.e("ProfileEditFragment", "Avatar upload failure", t);
                     showError("Помилка мережі: " + t.getMessage());
                 }
             });
@@ -515,7 +594,8 @@ public class ProfileEditFragment extends Fragment {
         } catch (IOException e) {
             e.printStackTrace();
             showProgress(false);
-            showError("Помилка обробки зображення");
+            Log.e("ProfileEditFragment", "Error processing image", e);
+            showError("Помилка обробки зображення: " + e.getMessage());
         }
     }
 
@@ -534,10 +614,85 @@ public class ProfileEditFragment extends Fragment {
 
         // Оновлюємо поточні дані користувача
         updateCurrentUserData();
+        
+        // Оновлюємо аватар, якщо він був завантажений
+        if (selectedImageBitmap != null) {
+            avatarImageView.setImageBitmap(selectedImageBitmap);
+        } else if (currentUser != null && currentUser.getAvatarUrl() != null && !currentUser.getAvatarUrl().isEmpty()) {
+            // Завантажуємо оновлений аватар з сервера
+            Glide.with(this)
+                    .load(currentUser.getAvatarUrl())
+                    .placeholder(R.drawable.ic_person)
+                    .error(R.drawable.ic_person)
+                    .into(avatarImageView);
+        }
 
         // Повертаємося назад через NavController
         NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
         navController.navigateUp();
+    }
+
+    private void refreshUserData() {
+        // Перезавантажуємо дані користувача з сервера після завантаження аватара
+        AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
+        Call<UserDto> call = apiService.getMe("Bearer " + authToken);
+
+        call.enqueue(new Callback<UserDto>() {
+            @Override
+            public void onResponse(@NonNull Call<UserDto> call, @NonNull Response<UserDto> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    currentUser = response.body();
+                    Log.d("ProfileEditFragment", "User data refreshed, avatar URL: " + currentUser.getAvatarUrl());
+                    
+                    // Оновлюємо аватар з новими даними
+                    String avatarUrl = currentUser.getAvatarUrl();
+                    if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                        Log.d("ProfileEditFragment", "Loading refreshed avatar from URL: " + avatarUrl);
+                        Glide.with(ProfileEditFragment.this)
+                                .load(avatarUrl)
+                                .placeholder(R.drawable.ic_person)
+                                .error(R.drawable.ic_person)
+                                .fallback(R.drawable.ic_person)
+                                .centerCrop()
+                                .circleCrop()
+                                .listener(new com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable>() {
+                                    @Override
+                                    public boolean onLoadFailed(@Nullable com.bumptech.glide.load.engine.GlideException e, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, boolean isFirstResource) {
+                                        if (e != null) {
+                                            Log.e("ProfileEditFragment", "Failed to load refreshed avatar: " + e.getMessage());
+                                            for (Throwable cause : e.getRootCauses()) {
+                                                Log.e("ProfileEditFragment", "Cause: " + cause.getMessage(), cause);
+                                            }
+                                        } else {
+                                            Log.e("ProfileEditFragment", "Failed to load refreshed avatar: unknown error");
+                                        }
+                                        return false;
+                                    }
+
+                                    @Override
+                                    public boolean onResourceReady(android.graphics.drawable.Drawable resource, Object model, com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable> target, com.bumptech.glide.load.DataSource dataSource, boolean isFirstResource) {
+                                        Log.d("ProfileEditFragment", "Refreshed avatar loaded successfully from: " + model);
+                                        return false;
+                                    }
+                                })
+                                .into(avatarImageView);
+                    } else {
+                        Log.d("ProfileEditFragment", "Refreshed avatar URL is empty, using placeholder");
+                        avatarImageView.setImageResource(R.drawable.ic_person);
+                    }
+                    finishUpdate();
+                } else {
+                    Log.e("ProfileEditFragment", "Failed to refresh user data, code: " + response.code());
+                    finishUpdate();
+                }
+            }
+
+            @Override
+            public void onFailure(@NonNull Call<UserDto> call, @NonNull Throwable t) {
+                Log.e("ProfileEditFragment", "Error refreshing user data", t);
+                finishUpdate();
+            }
+        });
     }
 
     private void updateCurrentUserData() {

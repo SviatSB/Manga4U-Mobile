@@ -5,16 +5,18 @@ import com.example.mangaapp.models.RecentManga;
 import com.example.mangaapp.api.UserDto;
 
 import java.util.List;
+import java.util.Map;
 
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
+import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
 import retrofit2.http.PATCH;
-import retrofit2.http.Path;
+import retrofit2.http.Part;
 import retrofit2.http.Query;
 import okhttp3.MultipartBody;
 
@@ -61,11 +63,24 @@ public interface AccountApiService {
     @POST("api/Account/change-password")
     Call<ResponseBody> changePassword(@Header("Authorization") String token, @Body ChangePasswordRequest request);
 
+    @Multipart
     @PATCH("api/Account/change-avatar")
-    Call<ResponseBody> changeAvatar(@Header("Authorization") String token, @Body MultipartBody.Part avatar);
+    Call<ResponseBody> changeAvatar(@Header("Authorization") String token, @Part MultipartBody.Part file);
 
     @PATCH("api/Account/reset-avatar")
     Call<ResponseBody> resetAvatar(@Header("Authorization") String token);
+
+    // Отримання історії читання
+    @GET("api/History")
+    Call<List<com.example.mangaapp.models.HistoryItem>> getHistory(@Header("Authorization") String token);
+
+    // Оновлення історії читання
+    @POST("api/History")
+    Call<ResponseBody> updateHistory(@Header("Authorization") String token, @Body UpdateHistoryRequest request);
+
+    // Отримання вектора рекомендацій (повертаємо ResponseBody для ручного парсингу JSON, бо формат може бути масивом)
+    @GET("api/History/recomendation-vector")
+    Call<ResponseBody> getRecommendationVector(@Header("Authorization") String token, @Query("limit") int limit);
 
     // Класи для запитів та відповідей
     class RegisterRequest {
@@ -138,5 +153,28 @@ public interface AccountApiService {
 
         public String getOldPassword() { return oldPassword; }
         public String getNewPassword() { return newPassword; }
+    }
+
+    class UpdateHistoryRequest {
+        private String mangaExternalId;
+        private String lastChapterId;
+        private String language;
+        private String lastChapterTitle;
+        private int lastChapterNumber;
+
+        public UpdateHistoryRequest(String mangaExternalId, String lastChapterId, String language,
+                                   String lastChapterTitle, int lastChapterNumber) {
+            this.mangaExternalId = mangaExternalId;
+            this.lastChapterId = lastChapterId;
+            this.language = language;
+            this.lastChapterTitle = lastChapterTitle;
+            this.lastChapterNumber = lastChapterNumber;
+        }
+
+        public String getMangaExternalId() { return mangaExternalId; }
+        public String getLastChapterId() { return lastChapterId; }
+        public String getLanguage() { return language; }
+        public String getLastChapterTitle() { return lastChapterTitle; }
+        public int getLastChapterNumber() { return lastChapterNumber; }
     }
 }

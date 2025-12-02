@@ -213,6 +213,8 @@ public class RegisterFragment extends Fragment {
                         if (registerSuccessListener != null) {
                             registerSuccessListener.onRegisterSuccess(authResponse.getToken(), "new_user");
                         }
+                        // Навігація до AccountFragment після успішної реєстрації
+                        navigateToAccount();
                     }
                 } else {
                     Toast.makeText(requireContext(), "Реєстрація успішна, але автологін не вдався. Спробуйте увійти вручну.", Toast.LENGTH_LONG).show();
@@ -238,5 +240,25 @@ public class RegisterFragment extends Fragment {
 
     public void setOnRegisterSuccessListener(OnRegisterSuccessListener listener) {
         this.registerSuccessListener = listener;
+    }
+    
+    private void navigateToAccount() {
+        try {
+            androidx.navigation.NavController navController = androidx.navigation.Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            
+            // Перевіряємо, чи вже знаходимося на AccountFragment
+            int currentDestination = navController.getCurrentDestination() != null ? 
+                    navController.getCurrentDestination().getId() : -1;
+            
+            // Якщо не на AccountFragment, виконуємо навігацію
+            if (currentDestination != R.id.nav_account) {
+                navController.navigate(R.id.nav_account);
+                Log.d("RegisterFragment", "Navigating to AccountFragment after registration");
+            } else {
+                Log.d("RegisterFragment", "Already on AccountFragment, no navigation needed");
+            }
+        } catch (Exception e) {
+            Log.e("RegisterFragment", "Error navigating to AccountFragment", e);
+        }
     }
 }

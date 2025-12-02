@@ -112,7 +112,7 @@ public class MangaDetailFragment extends Fragment {
         MangaApiService apiService = ApiClient.getClient().create(MangaApiService.class);
         List<String> includes = new java.util.ArrayList<>();
         includes.add("cover_art");
-        Call<MangaDetail> call = apiService.getMangaDetails(mangaId, includes);
+        Call<MangaDetail> call = apiService.getMangaDetails("manga/" + mangaId, includes);
         call.enqueue(new Callback<MangaDetail>() {
             @Override
             public void onResponse(Call<MangaDetail> call, Response<MangaDetail> response) {

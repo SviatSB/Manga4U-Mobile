@@ -5,25 +5,36 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/dark_background"
-    tools:context=".fragments.main.HomeFragment">
+    tools:context=".fragments.main.SearchFragment">
 
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tab_layout"
+    <LinearLayout
+        android:id="@+id/search_container"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:layout_marginStart="8dp"
-        android:layout_marginEnd="8dp"
-        app:tabMode="fixed"
-        app:tabGravity="fill"
-        app:tabTextColor="@color/gray_text"
-        app:tabSelectedTextColor="@color/purple_accent"
-        app:tabIndicatorColor="@color/purple_accent"
-        app:tabIndicatorHeight="3dp"
-        app:tabIndicatorFullWidth="true"
+        android:layout_margin="8dp"
+        android:orientation="horizontal"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <androidx.appcompat.widget.SearchView
+            android:id="@+id/search_view"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:queryHint="Пошук манги..." />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/genre_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="Жанр"
+            android:textColor="@color/purple_accent"
+            app:backgroundTint="@android:color/transparent"
+            app:strokeColor="@color/purple_accent"
+            app:strokeWidth="1dp" />
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/manga_grid"
@@ -32,7 +43,7 @@
         android:clipToPadding="false"
         android:padding="4dp"
         app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-        app:layout_constraintTop_toBottomOf="@id/tab_layout"
+        app:layout_constraintTop_toBottomOf="@id/search_container"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -50,4 +61,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
+

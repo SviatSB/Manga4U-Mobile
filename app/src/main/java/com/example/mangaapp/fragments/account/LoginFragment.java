@@ -119,6 +119,9 @@ public class LoginFragment extends Fragment {
                     } else {
                         Log.e("LoginFragment", "loginSuccessListener is null!");
                     }
+                    
+                    // Навігація до AccountFragment після успішного входу
+                    navigateToAccount();
                 } else {
                     // Обробка помилок HTTP
                     if (response.code() == 400 || response.code() == 401) {
@@ -151,5 +154,25 @@ public class LoginFragment extends Fragment {
 
     public void setOnLoginSuccessListener(OnLoginSuccessListener listener) {
         this.loginSuccessListener = listener;
+    }
+    
+    private void navigateToAccount() {
+        try {
+            androidx.navigation.NavController navController = androidx.navigation.Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            
+            // Перевіряємо, чи вже знаходимося на AccountFragment
+            int currentDestination = navController.getCurrentDestination() != null ? 
+                    navController.getCurrentDestination().getId() : -1;
+            
+            // Якщо не на AccountFragment, виконуємо навігацію
+            if (currentDestination != R.id.nav_account) {
+                navController.navigate(R.id.nav_account);
+                Log.d("LoginFragment", "Navigating to AccountFragment after login");
+            } else {
+                Log.d("LoginFragment", "Already on AccountFragment, no navigation needed");
+            }
+        } catch (Exception e) {
+            Log.e("LoginFragment", "Error navigating to AccountFragment", e);
+        }
     }
 }

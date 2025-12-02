@@ -11,6 +11,12 @@
         android:label="@string/menu_home"
         tools:layout="@layout/fragment_home" />
 
+    <fragment
+        android:id="@+id/nav_search"
+        android:name="com.example.mangaapp.fragments.main.SearchFragment"
+        android:label="Пошук"
+        tools:layout="@layout/fragment_search" />
+
     <!-- Видалено галерею та слайди: використовується кастомна обробка навігації для улюбленого та колекцій -->
 
     <fragment
