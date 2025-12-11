@@ -44,12 +44,14 @@ public class CollectionDetailFragment extends Fragment {
     private TextView titleView;
     private ImageButton renameButton, deleteButton;
     private SwitchCompat visibilitySwitch;
+    private View visibilityLayout; // Весь блок з перемикачем видимості
     private RecyclerView recyclerView;
     private ProgressBar progressBar;
     private AuthManager authManager;
     private Collection currentCollection;
     private MangaAdapter adapter;
     private List<Manga> mangaList = new ArrayList<>();
+    private boolean isUpdatingVisibility = false; // Захист від циклічного виклику
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -74,9 +76,15 @@ public class CollectionDetailFragment extends Fragment {
         titleView = view.findViewById(R.id.collection_title);
         renameButton = view.findViewById(R.id.rename_button);
         visibilitySwitch = view.findViewById(R.id.visibility_switch);
+        visibilityLayout = view.findViewById(R.id.visibility_layout);
         deleteButton = view.findViewById(R.id.delete_button);
         recyclerView = view.findViewById(R.id.manga_recycler_view);
         progressBar = view.findViewById(R.id.progress_bar);
+
+        // За замовчуванням приховуємо всі елементи управління - вони будуть показані тільки для несистемних колекцій
+        visibilityLayout.setVisibility(View.GONE);
+        renameButton.setVisibility(View.GONE);
+        deleteButton.setVisibility(View.GONE);
 
         if (collectionName != null) {
             titleView.setText(collectionName);
@@ -87,7 +95,11 @@ public class CollectionDetailFragment extends Fragment {
         recyclerView.setAdapter(adapter);
 
         renameButton.setOnClickListener(v -> showRenameDialog());
-        visibilitySwitch.setOnCheckedChangeListener((buttonView, isChecked) -> toggleVisibility(isChecked));
+        visibilitySwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (!isUpdatingVisibility) {
+                toggleVisibility(isChecked);
+            }
+        });
         deleteButton.setOnClickListener(v -> showDeleteDialog());
 
         loadCollectionDetails();
@@ -105,17 +117,34 @@ public class CollectionDetailFragment extends Fragment {
             public void onResponse(Call<Collection> call, Response<Collection> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     currentCollection = response.body();
-                    titleView.setText(currentCollection.getName());
+                    // Використовуємо локалізовану назву для системних колекцій
+                    titleView.setText(currentCollection.getLocalizedName());
                     
-                    if (currentCollection.isSystem()) {
+                    // Встановлюємо isSystem на основі systemCollectionType
+                    // Якщо systemCollectionType не null, то це системна колекція
+                    String systemType = currentCollection.getSystemCollectionType();
+                    boolean isSystemCollection = (systemType != null && !systemType.isEmpty());
+                    if (isSystemCollection) {
+                        currentCollection.setSystem(true);
+                    }
+                    
+                    Log.d("CollectionDetailFragment", "Collection name: " + currentCollection.getName() + 
+                          ", isSystem: " + isSystemCollection + 
+                          ", systemCollectionType: " + systemType);
+                    
+                    // Для системних колекцій приховуємо всі елементи управління
+                    if (isSystemCollection) {
                         renameButton.setVisibility(View.GONE);
                         deleteButton.setVisibility(View.GONE);
-                        visibilitySwitch.setVisibility(View.GONE);
+                        visibilityLayout.setVisibility(View.GONE); // Приховуємо весь блок з перемикачем
+                        Log.d("CollectionDetailFragment", "Hiding controls for system collection");
                     } else {
+                        // Для користувацьких колекцій показуємо всі елементи управління
                         renameButton.setVisibility(View.VISIBLE);
                         deleteButton.setVisibility(View.VISIBLE);
-                        visibilitySwitch.setVisibility(View.VISIBLE);
+                        visibilityLayout.setVisibility(View.VISIBLE);
                         visibilitySwitch.setChecked(currentCollection.isPublic());
+                        Log.d("CollectionDetailFragment", "Showing controls for user collection");
                     }
 
                     List<String> ids = currentCollection.getMangaExternalIds();
@@ -326,8 +355,10 @@ public class CollectionDetailFragment extends Fragment {
 
     private void toggleVisibility(boolean isChecked) {
         if (currentCollection == null || currentCollection.isSystem()) {
-            Toast.makeText(getContext(), "Неможна змінити видимість системної колекції", Toast.LENGTH_SHORT).show();
+            isUpdatingVisibility = true;
             visibilitySwitch.setChecked(!isChecked);
+            isUpdatingVisibility = false;
+            Toast.makeText(getContext(), "Неможна змінити видимість системної колекції", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -335,10 +366,13 @@ public class CollectionDetailFragment extends Fragment {
     }
 
     private void setCollectionVisibility(boolean isPublic) {
+        isUpdatingVisibility = true; // Блокуємо listener під час оновлення
         progressBar.setVisibility(View.VISIBLE);
         AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
         String token = "Bearer " + authManager.getAuthToken();
 
+        // Backend expects JSON boolean in body ([FromBody] bool isPublic)
+        // Retrofit/Gson автоматично серіалізує Boolean в JSON
         apiService.setCollectionVisibility(token, collectionId, isPublic).enqueue(new Callback<ResponseBody>() {
             @Override
             public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
@@ -348,16 +382,40 @@ public class CollectionDetailFragment extends Fragment {
                     String status = isPublic ? "публічною" : "приватною";
                     Toast.makeText(getContext(), "Колекція стала " + status, Toast.LENGTH_SHORT).show();
                 } else {
+                    // Відкат зміни при помилці
+                    isUpdatingVisibility = true;
                     visibilitySwitch.setChecked(!isPublic);
-                    Toast.makeText(getContext(), "Помилка змінення видимості", Toast.LENGTH_SHORT).show();
+                    isUpdatingVisibility = false;
+                    String errorMsg = "Помилка змінення видимості";
+                    try {
+                        if (response.errorBody() != null) {
+                            String errorBody = response.errorBody().string();
+                            if (errorBody != null && !errorBody.isEmpty()) {
+                                errorMsg = errorBody;
+                            }
+                        }
+                    } catch (Exception e) {
+                        Log.e("CollectionDetailFragment", "Error reading error body", e);
+                    }
+                    // Перевіряємо, чи це помилка про системну колекцію
+                    if (errorMsg.contains("system collection")) {
+                        errorMsg = "Неможна змінити видимість системної колекції";
+                    }
+                    Toast.makeText(getContext(), errorMsg, Toast.LENGTH_SHORT).show();
+                    Log.e("CollectionDetailFragment", "setCollectionVisibility error: " + errorMsg + ", code: " + response.code());
                 }
+                isUpdatingVisibility = false;
             }
 
             @Override
             public void onFailure(Call<ResponseBody> call, Throwable t) {
                 progressBar.setVisibility(View.GONE);
+                // Відкат зміни при помилці
+                isUpdatingVisibility = true;
                 visibilitySwitch.setChecked(!isPublic);
-                Toast.makeText(getContext(), "Помилка мережі: " + (t != null ? t.getMessage() : "невідома"), Toast.LENGTH_SHORT).show();
+                isUpdatingVisibility = false;
+                String errorMsg = t != null ? t.getMessage() : "невідома";
+                Toast.makeText(getContext(), "Помилка мережі: " + errorMsg, Toast.LENGTH_SHORT).show();
                 Log.e("CollectionDetailFragment", "setCollectionVisibility error", t);
             }
         });

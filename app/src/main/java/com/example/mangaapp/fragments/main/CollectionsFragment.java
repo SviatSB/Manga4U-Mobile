@@ -68,6 +68,21 @@ public class CollectionsFragment extends Fragment {
         tabLayout = view.findViewById(R.id.tab_layout);
         searchView = view.findViewById(R.id.search_view);
 
+        // Налаштування SearchView для клікабельності всього поля
+        searchView.setIconifiedByDefault(false);
+        searchView.setFocusable(true);
+        searchView.setFocusableInTouchMode(true);
+        
+        // Знаходимо EditText всередині SearchView і робимо його клікабельним
+        int searchPlateId = searchView.getContext().getResources().getIdentifier("android:id/search_src_text", null, null);
+        if (searchPlateId != 0) {
+            EditText searchEditText = searchView.findViewById(searchPlateId);
+            if (searchEditText != null) {
+                searchEditText.setFocusable(true);
+                searchEditText.setFocusableInTouchMode(true);
+            }
+        }
+
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new CollectionAdapter(new ArrayList<>(), this::onCollectionClick, this::onDeleteClick);
         recyclerView.setAdapter(adapter);
@@ -101,8 +116,14 @@ public class CollectionsFragment extends Fragment {
 
             @Override
             public boolean onQueryTextChange(String newText) {
-                if (currentTab == 2 && newText.isEmpty()) {
-                    loadPublicCollections();
+                if (currentTab == 2) {
+                    if (newText.isEmpty()) {
+                        // Порожній список, коли запит порожній
+                        adapter.updateList(new ArrayList<>());
+                    } else {
+                        // Пошук під час введення тексту (з невеликою затримкою для оптимізації)
+                        searchPublicCollections(newText);
+                    }
                 }
                 return true;
             }
@@ -118,6 +139,7 @@ public class CollectionsFragment extends Fragment {
     private void updateSearchViewVisibility() {
         if (currentTab == 2) {
             searchView.setVisibility(View.VISIBLE);
+            searchView.setQueryHint("Введіть назву колекції для пошуку...");
         } else {
             searchView.setVisibility(View.GONE);
             searchView.setQuery("", false);
@@ -183,7 +205,10 @@ public class CollectionsFragment extends Fragment {
             adapter.updateList(userCollections);
         } else {
             // Tab 2 - Search public collections
-            loadPublicCollections();
+            // Показуємо порожній список, поки користувач не введе запит
+            adapter.updateList(new ArrayList<>());
+            // Встановлюємо підказку для пошуку
+            searchView.setQueryHint("Введіть назву колекції для пошуку...");
         }
     }
 
@@ -215,15 +240,15 @@ public class CollectionsFragment extends Fragment {
         // Use application/json content type for ASP.NET Core compatibility
         okhttp3.RequestBody body = okhttp3.RequestBody.create("\"" + name + "\"", okhttp3.MediaType.parse("application/json; charset=utf-8"));
 
-        apiService.createCollection(token, body).enqueue(new Callback<Collection>() {
+        apiService.createCollection(token, body).enqueue(new Callback<ResponseBody>() {
             @Override
-            public void onResponse(Call<Collection> call, Response<Collection> response) {
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
                 progressBar.setVisibility(View.GONE);
                 if (response.isSuccessful()) {
                     Toast.makeText(getContext(), "Колекцію створено", Toast.LENGTH_SHORT).show();
                     loadCollections(); // Reload
                 } else {
-                    String errorMsg = "Помилка: " + response.code();
+                    String errorMsg = "Помилка створення колекції";
                     try {
                         if (response.errorBody() != null) {
                             errorMsg = response.errorBody().string();
@@ -232,14 +257,18 @@ public class CollectionsFragment extends Fragment {
                         android.util.Log.e("CollectionsFragment", "Error reading error body", e);
                     }
                     Toast.makeText(getContext(), errorMsg, Toast.LENGTH_SHORT).show();
-                    android.util.Log.e("CollectionsFragment", "createCollection error: " + errorMsg);
+                    android.util.Log.e("CollectionsFragment", "createCollection error: " + errorMsg + ", code: " + response.code());
                 }
             }
 
             @Override
-            public void onFailure(Call<Collection> call, Throwable t) {
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
                 progressBar.setVisibility(View.GONE);
                 String errorMsg = t == null ? "Невідома помилка" : t.getMessage();
+                // Перевіряємо, чи це JSON parsing error
+                if (errorMsg != null && errorMsg.contains("End of input")) {
+                    errorMsg = "Помилка обробки відповіді сервера";
+                }
                 Toast.makeText(getContext(), "Помилка мережі: " + errorMsg, Toast.LENGTH_LONG).show();
                 android.util.Log.e("CollectionsFragment", "createCollection onFailure", t);
             }
@@ -308,50 +337,61 @@ public class CollectionsFragment extends Fragment {
     }
 
     private void loadPublicCollections() {
-        progressBar.setVisibility(View.VISIBLE);
-        AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
-
-        apiService.searchCollections("").enqueue(new Callback<List<Collection>>() {
-            @Override
-            public void onResponse(Call<List<Collection>> call, Response<List<Collection>> response) {
-                progressBar.setVisibility(View.GONE);
-                if (response.isSuccessful() && response.body() != null) {
-                    publicCollections = response.body();
-                    adapter.updateList(publicCollections);
-                } else {
-                    adapter.updateList(new ArrayList<>());
-                }
-            }
-
-            @Override
-            public void onFailure(Call<List<Collection>> call, Throwable t) {
-                progressBar.setVisibility(View.GONE);
-                Toast.makeText(getContext(), "Помилка завантаження публічних колекцій", Toast.LENGTH_SHORT).show();
-            }
-        });
+        // Бекенд повертає порожній список для порожнього запиту
+        // Тому просто показуємо порожній список
+        adapter.updateList(new ArrayList<>());
     }
 
     public void searchPublicCollections(String query) {
+        // Якщо запит порожній, показуємо порожній список
+        if (query == null || query.trim().isEmpty()) {
+            adapter.updateList(new ArrayList<>());
+            return;
+        }
+
+        String searchQuery = query.trim();
+        if (searchQuery.isEmpty()) {
+            adapter.updateList(new ArrayList<>());
+            return;
+        }
+
         progressBar.setVisibility(View.VISIBLE);
         AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
 
-        apiService.searchCollections(query).enqueue(new Callback<List<Collection>>() {
+        android.util.Log.d("CollectionsFragment", "Searching for: " + searchQuery);
+        apiService.searchCollections(searchQuery).enqueue(new Callback<List<Collection>>() {
             @Override
             public void onResponse(Call<List<Collection>> call, Response<List<Collection>> response) {
                 progressBar.setVisibility(View.GONE);
+                android.util.Log.d("CollectionsFragment", "Search response code: " + response.code() + ", successful: " + response.isSuccessful());
+                
                 if (response.isSuccessful() && response.body() != null) {
                     publicCollections = response.body();
+                    android.util.Log.d("CollectionsFragment", "Found collections: " + publicCollections.size());
                     adapter.updateList(publicCollections);
+                    if (publicCollections.isEmpty()) {
+                        Toast.makeText(getContext(), "Колекцій не знайдено", Toast.LENGTH_SHORT).show();
+                    }
                 } else {
                     adapter.updateList(new ArrayList<>());
-                    Toast.makeText(getContext(), "Колекцій не знайдено", Toast.LENGTH_SHORT).show();
+                    String errorMsg = "Колекцій не знайдено";
+                    try {
+                        if (response.errorBody() != null) {
+                            errorMsg = response.errorBody().string();
+                            android.util.Log.e("CollectionsFragment", "Search error: " + errorMsg);
+                        }
+                    } catch (Exception e) {
+                        android.util.Log.e("CollectionsFragment", "Error reading error body", e);
+                    }
+                    Toast.makeText(getContext(), errorMsg, Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<List<Collection>> call, Throwable t) {
                 progressBar.setVisibility(View.GONE);
-                Toast.makeText(getContext(), "Помилка пошуку", Toast.LENGTH_SHORT).show();
+                android.util.Log.e("CollectionsFragment", "Search failure", t);
+                Toast.makeText(getContext(), "Помилка пошуку: " + (t != null ? t.getMessage() : "невідома"), Toast.LENGTH_SHORT).show();
             }
         });
     }

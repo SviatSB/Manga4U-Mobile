@@ -97,7 +97,7 @@ public interface AccountApiService {
     Call<Collection> getCollectionDetails(@Header("Authorization") String token, @Path("id") String id);
 
     @POST("api/Collection")
-    Call<Collection> createCollection(@Header("Authorization") String token, @Body okhttp3.RequestBody name);
+    Call<ResponseBody> createCollection(@Header("Authorization") String token, @Body okhttp3.RequestBody name);
 
     @DELETE("api/Collection/{id}")
     Call<ResponseBody> deleteCollection(@Header("Authorization") String token, @Path("id") String id);
@@ -112,10 +112,10 @@ public interface AccountApiService {
     Call<ResponseBody> removeMangaFromCollection(@Header("Authorization") String token, @Path("id") String collectionId, @Query("mangaExternalId") String mangaId);
 
     @POST("api/Collection/{id}/visibility")
-    Call<ResponseBody> setCollectionVisibility(@Header("Authorization") String token, @Path("id") String collectionId, @Query("isPublic") boolean isPublic);
+    Call<ResponseBody> setCollectionVisibility(@Header("Authorization") String token, @Path("id") String collectionId, @Body Boolean isPublic);
 
     @GET("api/Collection/search")
-    Call<List<Collection>> searchCollections(@Query("query") String query);
+    Call<List<Collection>> searchCollections(@Query("name") String name);
 
     @POST("api/Collection/{id}/clone")
     Call<Collection> cloneCollection(@Header("Authorization") String token, @Path("id") String collectionId);

@@ -45,7 +45,8 @@ public class CollectionAdapter extends RecyclerView.Adapter<CollectionAdapter.Vi
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Collection collection = collections.get(position);
-        holder.name.setText(collection.getName());
+        // Використовуємо локалізовану назву для системних колекцій
+        holder.name.setText(collection.getLocalizedName());
         
         // System collections cannot be deleted
         if (collection.isSystem()) {
