@@ -89,4 +89,13 @@ public interface MangaApiService {
             @Query("offset") int offset,
             @Query("includes[]") List<String> includes
     );
+
+    // Отримання списку манг за їх ID
+    @GET("api/MangaDexProxy")
+    Call<MangaResponse> getMangaList(
+            @Query("path") String path,
+            @Query("ids[]") List<String> ids,
+            @Query("limit") int limit,
+            @Query("includes[]") List<String> includes
+    );
 }

@@ -64,13 +64,16 @@ public class HomeFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
+        Log.d("HomeFragment", "=== onCreateView called ===");
         SharedPreferences prefs = requireContext().getSharedPreferences("manga_prefs", Context.MODE_PRIVATE);
         selectedLanguage = prefs.getString("selected_language", "en");
         View root = inflater.inflate(R.layout.fragment_home, container, false);
+        Log.d("HomeFragment", "Layout inflated");
 
         mangaGrid = root.findViewById(R.id.manga_grid);
         progressBar = root.findViewById(R.id.progress_bar);
         tabLayout = root.findViewById(R.id.tab_layout);
+        Log.d("HomeFragment", "Views found");
 
         // Налаштування GridLayoutManager для центрування
         GridLayoutManager layoutManager = new GridLayoutManager(getContext(), 3);
@@ -128,17 +131,21 @@ public class HomeFragment extends Fragment {
         });
 
         // За замовчуванням завантажуємо новинки
+        Log.d("HomeFragment", "About to load latest manga");
         loadLatestManga();
+        Log.d("HomeFragment", "loadLatestManga() called");
 
         return root;
     }
 
 
     private void loadLatestManga() {
+        Log.d("HomeFragment", "loadLatestManga() started");
         progressBar.setVisibility(View.VISIBLE);
         MangaApiService apiService = ApiClient.getClient().create(MangaApiService.class);
         List<String> includes = new ArrayList<>();
         includes.add("cover_art");
+        Log.d("HomeFragment", "Making API call for latest manga");
         Call<MangaResponse> call = apiService.getLatestManga("manga", 20, 0, "desc", includes);
         processMangaResponse(call, apiService);
     }
@@ -435,11 +442,13 @@ public class HomeFragment extends Fragment {
     }
 
     private void processMangaResponse(Call<MangaResponse> call, MangaApiService apiService) {
+        Log.d("HomeFragment", "processMangaResponse() called");
         final List<Manga> mangaList = new ArrayList<>();
 
         call.enqueue(new Callback<MangaResponse>() {
             @Override
             public void onResponse(Call<MangaResponse> call, Response<MangaResponse> response) {
+                Log.d("HomeFragment", "API onResponse called, successful: " + response.isSuccessful());
                 if (response.isSuccessful() && response.body() != null) {
                     List<MangaResponse.Data> dataList = response.body().getData();
                     if (dataList == null || dataList.isEmpty()) {
@@ -572,8 +581,9 @@ public class HomeFragment extends Fragment {
             }
             @Override
             public void onFailure(Call<MangaResponse> call, Throwable t) {
+                Log.e("HomeFragment", "API onFailure: " + (t == null ? "null" : t.getMessage()), t);
                 progressBar.setVisibility(View.GONE);
-                Toast.makeText(getContext(), "Помилка: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Помилка: " + (t == null ? "unknown" : t.getMessage()), Toast.LENGTH_SHORT).show();
             }
         });
     }

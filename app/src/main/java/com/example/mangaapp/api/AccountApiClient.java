@@ -11,6 +11,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import okhttp3.OkHttpClient;
+import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -67,6 +68,17 @@ public class AccountApiClient {
             OkHttpClient.Builder builder = new OkHttpClient.Builder();
             builder.sslSocketFactory(sslSocketFactory, (X509TrustManager) trustAllCerts[0]);
             builder.hostnameVerifier((hostname, session) -> true);
+
+            // Add logging interceptor to help debugging requests/responses
+            // Use anonymous class instead of lambda to avoid Java compatibility issues in some setups
+            okhttp3.logging.HttpLoggingInterceptor logging = new okhttp3.logging.HttpLoggingInterceptor(new okhttp3.logging.HttpLoggingInterceptor.Logger() {
+                @Override
+                public void log(String message) {
+                    Log.d("OkHttp", message);
+                }
+            });
+            logging.setLevel(okhttp3.logging.HttpLoggingInterceptor.Level.BODY);
+            builder.addInterceptor((okhttp3.Interceptor) logging);
 
             return builder.build();
         } catch (Exception e) {

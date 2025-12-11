@@ -61,15 +61,36 @@
             app:singleSelection="false"
             app:layout_constraintTop_toBottomOf="@id/manga_description" />
 
-        <Button
-            android:id="@+id/read_button"
+        <LinearLayout
+            android:id="@+id/buttons_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
-            android:text="Читати"
-            android:textColor="@color/white"
-            app:backgroundTint="@color/purple_500"
-            app:layout_constraintTop_toBottomOf="@id/language_chip_group" />
+            android:orientation="horizontal"
+            android:weightSum="2"
+            app:layout_constraintTop_toBottomOf="@id/language_chip_group">
+
+            <Button
+                android:id="@+id/read_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp"
+                android:text="Читати"
+                android:textColor="@color/white"
+                app:backgroundTint="@color/purple_500" />
+
+            <Button
+                android:id="@+id/add_to_collection_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:text="До колекції"
+                android:textColor="@color/white"
+                app:backgroundTint="@color/teal_700"
+                app:icon="@android:drawable/ic_input_add" />
+        </LinearLayout>
 
         <ProgressBar
             android:id="@+id/progress_bar"

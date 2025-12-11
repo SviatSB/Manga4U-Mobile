@@ -28,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private String currentReadingMode = "horizontal";
     private AuthManager authManager;
+    private boolean isUpdatingMenuSelection = false; // Flag to prevent recursion loop
 
     @SuppressLint("NonConstantResourceId")
     @Override
@@ -43,24 +44,65 @@ public class MainActivity extends AppCompatActivity {
 
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
 
+        // Initialize auth manager before setting up bottom nav listener
+        authManager = AuthManager.getInstance(this);
+
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-                R.id.nav_home, R.id.nav_search, R.id.nav_account)
-                .build();
+            R.id.nav_home, R.id.nav_search, R.id.nav_account, R.id.collectionsFragment)
+            .build();
 
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
 
         BottomNavigationView bottomNav = findViewById(R.id.bottom_nav);
-        NavigationUI.setupWithNavController(bottomNav, navController);
+
+        // Handle menu item selection
         bottomNav.setOnItemSelectedListener(item -> {
-            int id = item.getItemId();
-            if (id == R.id.nav_favorites || id == R.id.nav_collections) {
-                Toast.makeText(this, "Вікно зараз не доступне", Toast.LENGTH_SHORT).show();
-                return false; // не змінюємо вибраний пункт
+            // Skip if we're updating from destination change listener (avoid recursion)
+            if (isUpdatingMenuSelection) {
+                return true;
             }
-            return NavigationUI.onNavDestinationSelected(item, navController) || super.onOptionsItemSelected(item);
+            
+            int id = item.getItemId();
+            if (id == R.id.collectionsFragment) {
+                 if (authManager.isLoggedIn()) {
+                    // Use global action to navigate to collections
+                    navController.navigate(R.id.action_global_to_collectionsFragment);
+                    return true;
+                 } else {
+                     Toast.makeText(this, "Будь ласка, увійдіть в акаунт", Toast.LENGTH_SHORT).show();
+                     return false; // Don't select the item
+                 }
+            }
+           // if (id == R.id.nav_favorites) {
+           //     Toast.makeText(this, "Вікно зараз не доступне", Toast.LENGTH_SHORT).show();
+           //     return false;
+//}
+            // For all other menu items (nav_home, nav_search, nav_account), navigate directly
+            // WITHOUT calling NavigationUI.onNavDestinationSelected to avoid double-setting selection
+            if (id == R.id.nav_home) {
+                navController.navigate(R.id.nav_home);
+                return true;
+            } else if (id == R.id.nav_search) {
+                navController.navigate(R.id.nav_search);
+                return true;
+            } else if (id == R.id.nav_account) {
+                navController.navigate(R.id.nav_account);
+                return true;
+            }
+            return false;
         });
         bottomNav.setItemIconTintList(getResources().getColorStateList(R.color.selector_bottom_nav));
         bottomNav.setItemTextColor(getResources().getColorStateList(R.color.selector_bottom_nav));
+
+        // Sync menu selection when destination changes (with flag to prevent recursion)
+        navController.addOnDestinationChangedListener((controller, destination, arguments) -> {
+            int destId = destination.getId();
+            if (destId == R.id.nav_home || destId == R.id.nav_search || destId == R.id.nav_account || destId == R.id.collectionsFragment) {
+                isUpdatingMenuSelection = true;
+                bottomNav.setSelectedItemId(destId);
+                isUpdatingMenuSelection = false;
+            }
+        });
 
         SharedPreferences prefs = getSharedPreferences("MangaAppPrefs", Context.MODE_PRIVATE);
         currentReadingMode = prefs.getString("reading_mode", "horizontal");
@@ -69,11 +111,6 @@ public class MainActivity extends AppCompatActivity {
         authManager = AuthManager.getInstance(this);
         checkAuthStatus();
         setupFragmentTransitions();
-
-        // ✅ Тепер неон і всі ефекти централізовані в XML
-        // Якщо потрібно використовувати NeonBackgroundView, привʼяжи його через binding
-        // Наприклад:
-        // NeonBackgroundView neonBackground = binding.neonBackground;
     }
 
     private void setupFragmentTransitions() {

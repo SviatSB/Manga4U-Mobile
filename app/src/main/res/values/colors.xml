@@ -1,54 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#7B3ADC</color>
-    <color name="purple_700">#8160CE</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="gray_600">#FF757575</color>
-    <color name="gray_400">#FFBDBDBD</color>
-    <color name="dark_purple_1">#0F001F</color>
-    <color name="dark_purple_2">#1A0033</color>
-    <color name="dark_purple_3">#26004D</color>
-    <color name="dark_purple_4">#330066</color>
 
-    <!-- Dark theme colors -->
-    <color name="dark_background">#FF121212</color>
-    <color name="dark_surface">#FF1E1E1E</color>
-    <color name="dark_primary">#FFBB86FC</color>
-    <color name="dark_on_surface">#FFFFFFFF</color>
-    
-    <!-- New dark theme colors matching the design -->
-    <color name="dark_gray_background">#FF1A1A1A</color>
-    <color name="dark_gray_surface">#FF2D2D2D</color>
-    <color name="dark_gray_input">#FF3A3A3A</color>
-    <color name="purple_accent">#FF7B3ADC</color>
-    <color name="white_text">#FFFFFFFF</color>
-    <color name="gray_text">#FFBDBDBD</color>
+    <!-- Основні кольори теми -->
+    <color name="dark_background">#121212</color>
+    <color name="gray_400">#BDBDBD</color>
+    <color name="white_text">#FFFFFF</color>
+    <color name="gray_text">#BDBDBD</color>
+    <color name="purple_accent">#9C27B0</color>
 
-    <!-- App specific colors -->
-    <color name="primary">@color/purple_500</color>
-    <color name="primary_dark">@color/purple_700</color>
-    <color name="primary_light">@color/purple_200</color>
-    <color name="accent">@color/teal_200</color>
-    <color name="text_primary">@color/black</color>
-    <color name="text_secondary">@color/gray_600</color>
-    <color name="text_tertiary">@color/gray_400</color>
-    <color name="divider">@color/gray_400</color>
-    <color name="background">@color/white</color>
-    <color name="surface">@color/white</color>
-    <color name="error">#FFB00020</color>
-    <color name="success">#FF4CAF50</color>
-    <color name="warning">#FFFF9800</color>
-    <color name="info">#FF2196F3</color>
-
-    <!-- Bottom navigation colors -->
-    <color name="bottom_nav_active">@color/primary</color>
-    <color name="bottom_nav_inactive">@color/text_secondary</color>
-
-    <!-- Card background colors -->
-    <color name="card_background_dark">#FF2D2D2D</color>
-    <color name="background_light">#FFF5F5F5</color>
+    <!-- Додані кольори для нових компонентів -->
+    <color name="red_error">#F44336</color>
+    <color name="card_background">#1E1E1E</color>
+    <color name="dark_gray_background">#121212</color>
+    <color name="gray_600">#757575</color>
+    <color name="dark_gray_surface">#212121</color>
+    <color name="dark_gray_input">#333333</color>
+    <color name="bottom_nav_inactive">#8AFFFFFF</color>
+    <color name="dark_purple_3">#311B92</color>
+    <color name="success">#4CAF50</color>
+    <color name="error">#F44336</color>
+    <color name="card_background_dark">#2C2C2C</color>
 </resources>

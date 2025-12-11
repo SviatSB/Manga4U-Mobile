@@ -5,24 +5,102 @@
     android:id="@+id/mobile_navigation"
     app:startDestination="@+id/nav_home">
 
+    <!-- Глобальна дія для переходу до колекцій з будь-якого місця -->
+    <action android:id="@+id/action_global_to_collectionsFragment"
+        app:destination="@id/collectionsFragment" />
+
     <fragment
         android:id="@+id/nav_home"
         android:name="com.example.mangaapp.fragments.main.HomeFragment"
         android:label="@string/menu_home"
-        tools:layout="@layout/fragment_home" />
+        tools:layout="@layout/fragment_home">
+        <action
+            android:id="@+id/action_homeFragment_to_mangaDetailFragment"
+            app:destination="@id/mangaDetailFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/nav_search"
         android:name="com.example.mangaapp.fragments.main.SearchFragment"
         android:label="Пошук"
-        tools:layout="@layout/fragment_search" />
-
-    <!-- Видалено галерею та слайди: використовується кастомна обробка навігації для улюбленого та колекцій -->
+        tools:layout="@layout/fragment_search">
+        <action
+            android:id="@+id/action_searchFragment_to_mangaDetailFragment"
+            app:destination="@id/mangaDetailFragment" />
+    </fragment>
 
     <fragment
         android:id="@+id/nav_account"
         android:name="com.example.mangaapp.fragments.account.AccountFragment"
         android:label="@string/menu_account"
-        tools:layout="@layout/fragment_account" />
+        tools:layout="@layout/fragment_account">
+        <action
+            android:id="@+id/action_account_to_profile_edit"
+            app:destination="@id/profileEditFragment" />
+        <action
+            android:id="@+id/action_account_to_history"
+            app:destination="@id/historyFragment" />
+        <action
+            android:id="@+id/action_accountFragment_to_mangaDetailFragment"
+            app:destination="@id/mangaDetailFragment" />
+    </fragment>
 
+    <fragment
+        android:id="@+id/mangaDetailFragment"
+        android:name="com.example.mangaapp.fragments.main.MangaDetailFragment"
+        android:label="Деталі манги"
+        tools:layout="@layout/fragment_manga_detail">
+        <action
+            android:id="@+id/action_mangaDetailFragment_to_chapterListFragment"
+            app:destination="@id/chapterListFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/chapterListFragment"
+        android:name="com.example.mangaapp.fragments.main.ChapterListFragment"
+        android:label="Список розділів"
+        tools:layout="@layout/fragment_chapter_list">
+        <action
+            android:id="@+id/action_chapterListFragment_to_readerFragment"
+            app:destination="@id/readerFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/readerFragment"
+        android:name="com.example.mangaapp.fragments.main.ReaderFragment"
+        android:label="Читалка"
+        tools:layout="@layout/fragment_reader" />
+
+    <fragment
+        android:id="@+id/collectionsFragment"
+        android:name="com.example.mangaapp.fragments.main.CollectionsFragment"
+        android:label="Мої колекції"
+        tools:layout="@layout/fragment_collections">
+        <action
+            android:id="@+id/action_collectionsFragment_to_collectionDetailFragment"
+            app:destination="@id/collectionDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/collectionDetailFragment"
+        android:name="com.example.mangaapp.fragments.main.CollectionDetailFragment"
+        android:label="Колекція"
+        tools:layout="@layout/fragment_collection_detail">
+        <action
+            android:id="@+id/action_collectionDetailFragment_to_mangaDetailFragment"
+            app:destination="@id/mangaDetailFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/profileEditFragment"
+        android:name="com.example.mangaapp.fragments.account.ProfileEditFragment"
+        android:label="Редагування профілю"
+        tools:layout="@layout/fragment_profile_edit" />
+        
+    <fragment
+        android:id="@+id/historyFragment"
+        android:name="com.example.mangaapp.fragments.account.HistoryFragment"
+        android:label="Історія"
+        tools:layout="@layout/fragment_history" />
+        
 </navigation>

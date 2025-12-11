@@ -58,6 +58,7 @@ public class AccountFragment extends Fragment implements
     private MaterialButton editProfileButton;
     private MaterialButton logoutButton;
     private MaterialButton viewAllHistoryButton;
+    private MaterialButton collectionsButton;
     private RecyclerView recentMangaRecycler;
 
     // Адаптери
@@ -124,12 +125,16 @@ public class AccountFragment extends Fragment implements
         editProfileButton = view.findViewById(R.id.btn_edit_profile);
         logoutButton = view.findViewById(R.id.btn_logout);
         viewAllHistoryButton = view.findViewById(R.id.btn_view_all_history);
+        collectionsButton = view.findViewById(R.id.btn_collections);
         recentMangaRecycler = view.findViewById(R.id.recent_manga_recycler);
 
         editProfileButton.setOnClickListener(v -> openProfileEdit());
         logoutButton.setOnClickListener(v -> logout());
         if (viewAllHistoryButton != null) {
             viewAllHistoryButton.setOnClickListener(v -> openHistoryFragment());
+        }
+        if (collectionsButton != null) {
+            collectionsButton.setOnClickListener(v -> openCollectionsFragment());
         }
     }
 
@@ -409,12 +414,19 @@ public class AccountFragment extends Fragment implements
     
     private void openHistoryFragment() {
         try {
-            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-            navController.navigate(R.id.action_account_to_history);
-            Log.d("AccountFragment", "Navigating to HistoryFragment");
+            Navigation.findNavController(requireView()).navigate(R.id.action_account_to_history);
         } catch (Exception e) {
             Log.e("AccountFragment", "Error navigating to HistoryFragment", e);
             Toast.makeText(requireContext(), "Помилка відкриття історії", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void openCollectionsFragment() {
+        try {
+            Navigation.findNavController(requireView()).navigate(R.id.action_global_to_collectionsFragment);
+        } catch (Exception e) {
+            Log.e("AccountFragment", "Error navigating to CollectionsFragment", e);
+            Toast.makeText(requireContext(), "Помилка відкриття колекцій", Toast.LENGTH_SHORT).show();
         }
     }
     
@@ -430,8 +442,7 @@ public class AccountFragment extends Fragment implements
             bundle.putString("chapterId", manga.getChapterId());
             bundle.putString("mangaId", manga.getMangaId());
             bundle.putString("mangaTitle", manga.getTitle());
-            navController.navigate(R.id.nav_reader, bundle);
-            Log.d("AccountFragment", "Navigating to ReaderFragment with chapter: " + manga.getChapterId());
+            navController.navigate(R.id.readerFragment, bundle);
         } catch (Exception e) {
             Log.e("AccountFragment", "Error navigating to ReaderFragment", e);
             Toast.makeText(requireContext(), "Помилка відкриття глави", Toast.LENGTH_SHORT).show();
@@ -628,10 +639,7 @@ public class AccountFragment extends Fragment implements
 
     private void openProfileEdit() {
         try {
-            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-
-            // Виконуємо навігацію з анімацією
-            navController.navigate(R.id.action_account_to_profile_edit);
+            Navigation.findNavController(requireView()).navigate(R.id.action_account_to_profile_edit);
 
             Log.d("AccountFragment", "Navigating to profile edit with animation");
         } catch (Exception e) {

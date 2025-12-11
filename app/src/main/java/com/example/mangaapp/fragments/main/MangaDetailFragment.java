@@ -8,6 +8,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.Toast;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import androidx.navigation.Navigation;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -22,16 +24,22 @@ import com.example.mangaapp.API_MangaDex.MangaDetail;
 import com.example.mangaapp.api.ApiClient;
 import com.example.mangaapp.MangaApiService;
 import com.example.mangaapp.R;
+import com.example.mangaapp.utils.AuthManager;
+import com.example.mangaapp.api.AccountApiClient;
+import com.example.mangaapp.api.AccountApiService;
+import com.example.mangaapp.models.Collection;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 import com.example.mangaapp.databinding.FragmentMangaDetailBinding;
 
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 import java.util.List;
 import java.util.Map;
+import java.util.ArrayList;
 
 public class MangaDetailFragment extends Fragment {
     private static final String ARG_MANGA_ID = "manga_id";
@@ -39,6 +47,7 @@ public class MangaDetailFragment extends Fragment {
     private ProgressBar progressBar;
     private String selectedLanguage = "en";
     private FragmentMangaDetailBinding binding;
+    private AuthManager authManager;
 
     public static MangaDetailFragment newInstance(String mangaId) {
         MangaDetailFragment fragment = new MangaDetailFragment();
@@ -57,6 +66,7 @@ public class MangaDetailFragment extends Fragment {
         // Завантажуємо вибрану мову
         SharedPreferences prefs = requireContext().getSharedPreferences("manga_prefs", Context.MODE_PRIVATE);
         selectedLanguage = prefs.getString("selected_language", "en");
+        authManager = AuthManager.getInstance(requireContext());
     }
 
     @Nullable
@@ -102,6 +112,107 @@ public class MangaDetailFragment extends Fragment {
                 Navigation.findNavController(v).navigate(R.id.action_mangaDetailFragment_to_chapterListFragment, bundle);
             } catch (Exception e) {
                 Log.e("MangaApp", "[MangaDetailFragment] Navigation error: ", e);
+            }
+        });
+
+        binding.addToCollectionButton.setOnClickListener(v -> {
+            showAddToCollectionDialog();
+        });
+    }
+
+    private void showAddToCollectionDialog() {
+        if (!authManager.isLoggedIn()) {
+            Toast.makeText(getContext(), "Увійдіть в акаунт, щоб додавати до колекцій", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        progressBar.setVisibility(View.VISIBLE);
+        AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
+        String token = "Bearer " + authManager.getAuthToken();
+
+        // Завантажуємо обидва типи колекцій паралельно
+        apiService.getSystemCollections(token).enqueue(new Callback<List<Collection>>() {
+            @Override
+            public void onResponse(Call<List<Collection>> call, Response<List<Collection>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    List<Collection> systemCollections = response.body();
+                    // Тепер завантажуємо користувацькі колекції
+                    apiService.getUserCollections(token).enqueue(new Callback<List<Collection>>() {
+                        @Override
+                        public void onResponse(Call<List<Collection>> call, Response<List<Collection>> response) {
+                            progressBar.setVisibility(View.GONE);
+                            if (response.isSuccessful() && response.body() != null) {
+                                List<Collection> userCollections = response.body();
+                                // Об'єднуємо системні та користувацькі колекції
+                                List<Collection> allCollections = new ArrayList<>(systemCollections);
+                                allCollections.addAll(userCollections);
+                                showCollectionSelection(allCollections);
+                            } else {
+                                // Якщо не вдалося завантажити користувацькі, показуємо хоча б системні
+                                showCollectionSelection(systemCollections);
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<List<Collection>> call, Throwable t) {
+                            progressBar.setVisibility(View.GONE);
+                            // Якщо помилка мережі, показуємо хоча б системні
+                            showCollectionSelection(systemCollections);
+                        }
+                    });
+                } else {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(getContext(), "Не вдалося отримати колекції", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Collection>> call, Throwable t) {
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(getContext(), "Помилка мережі: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void showCollectionSelection(List<Collection> collections) {
+        if (collections.isEmpty()) {
+            Toast.makeText(getContext(), "Список колекцій порожній", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String[] items = new String[collections.size()];
+        for (int i = 0; i < collections.size(); i++) {
+            items[i] = collections.get(i).getName();
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("Оберіть колекцію");
+        builder.setItems(items, (dialog, which) -> {
+            addMangaToCollection(collections.get(which).getId());
+        });
+        builder.show();
+    }
+
+    private void addMangaToCollection(String collectionId) {
+        progressBar.setVisibility(View.VISIBLE);
+        AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
+        String token = "Bearer " + authManager.getAuthToken();
+
+        apiService.addMangaToCollection(token, collectionId, mangaId).enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                progressBar.setVisibility(View.GONE);
+                if (response.isSuccessful()) {
+                    Toast.makeText(getContext(), "Мангу додано до колекції", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getContext(), "Помилка при додаванні: " + response.code(), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(getContext(), "Помилка мережі", Toast.LENGTH_SHORT).show();
             }
         });
     }

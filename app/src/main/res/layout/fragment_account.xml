@@ -328,6 +328,23 @@
                                 </LinearLayout>
                             </com.google.android.material.card.MaterialCardView>
 
+                            <!-- Кнопка Колекції -->
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_collections"
+                                android:layout_width="match_parent"
+                                android:layout_height="56dp"
+                                android:layout_marginBottom="16dp"
+                                android:text="Мої колекції"
+                                android:textSize="14sp"
+                                android:textStyle="bold"
+                                app:cornerRadius="16dp"
+                                android:backgroundTint="@color/teal_700"
+                                app:icon="@android:drawable/ic_menu_agenda"
+                                app:iconGravity="textStart"
+                                app:iconPadding="12dp"
+                                app:iconTint="@color/white_text"
+                                android:elevation="4dp" />
+
                             <!-- Кнопки дій -->
                             <LinearLayout
                                 android:layout_width="match_parent"
