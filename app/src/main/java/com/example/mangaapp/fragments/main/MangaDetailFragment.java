@@ -118,6 +118,23 @@ public class MangaDetailFragment extends Fragment {
         binding.addToCollectionButton.setOnClickListener(v -> {
             showAddToCollectionDialog();
         });
+
+        // Додаємо обробник для кнопки відгуків
+        binding.reviewsButton.setOnClickListener(v -> {
+            Bundle bundle = new Bundle();
+            bundle.putString("manga_id", mangaId);
+            try {
+                // Використовуємо перехід до ReviewsFragment
+                // Потрібно переконатися, що цей action існує в навігаційному графі,
+                // або створити його, або використовувати id фрагмента напряму, якщо граф не налаштований
+                Navigation.findNavController(v).navigate(R.id.action_mangaDetailFragment_to_reviewsFragment, bundle);
+            } catch (Exception e) {
+                // Fallback якщо action ще не створений в графі, спробуємо по ID
+                // Але краще додати action в nav_graph.xml
+                Log.e("MangaApp", "Navigation error to ReviewsFragment", e);
+                Toast.makeText(getContext(), "Помилка переходу до відгуків", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void showAddToCollectionDialog() {

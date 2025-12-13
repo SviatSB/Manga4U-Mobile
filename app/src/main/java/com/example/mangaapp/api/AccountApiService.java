@@ -112,7 +112,7 @@ public interface AccountApiService {
     Call<ResponseBody> removeMangaFromCollection(@Header("Authorization") String token, @Path("id") String collectionId, @Query("mangaExternalId") String mangaId);
 
     @POST("api/Collection/{id}/visibility")
-    Call<ResponseBody> setCollectionVisibility(@Header("Authorization") String token, @Path("id") String collectionId, @Body Boolean isPublic);
+    Call<ResponseBody> setCollectionVisibility(@Header("Authorization") String token, @Path("id") String collectionId, @Query("isPublic") Boolean isPublic);
 
     @GET("api/Collection/search")
     Call<List<Collection>> searchCollections(@Query("name") String name);

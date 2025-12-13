@@ -53,6 +53,13 @@
         <action
             android:id="@+id/action_mangaDetailFragment_to_chapterListFragment"
             app:destination="@id/chapterListFragment" />
+        <action
+            android:id="@+id/action_mangaDetailFragment_to_reviewsFragment"
+            app:destination="@id/reviewsFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
     </fragment>
 
     <fragment
@@ -70,6 +77,16 @@
         android:name="com.example.mangaapp.fragments.main.ReaderFragment"
         android:label="Читалка"
         tools:layout="@layout/fragment_reader" />
+    
+    <fragment
+        android:id="@+id/reviewsFragment"
+        android:name="com.example.mangaapp.fragments.main.ReviewsFragment"
+        android:label="Відгуки"
+        tools:layout="@layout/fragment_reviews">
+        <argument
+            android:name="manga_id"
+            app:argType="string" />
+    </fragment>
 
     <fragment
         android:id="@+id/collectionsFragment"

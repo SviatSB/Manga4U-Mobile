@@ -70,7 +70,7 @@ public class ReaderFragment extends Fragment {
     
     // Нові поля для навігації
     private TextView chapterInfo;
-    private ImageView btnPrevious, btnNext;
+    private ImageView btnPrevious, btnNext, btnComments;
     private View navigationMenu;
     private boolean isNavigationMenuVisible = true;
     private List<ChapterFeedResponse.Result> allChapters = new ArrayList<>();
@@ -112,6 +112,7 @@ public class ReaderFragment extends Fragment {
         chapterInfo = binding.chapterInfo;
         btnPrevious = binding.btnPrevious;
         btnNext = binding.btnNext;
+        btnComments = binding.btnComments;
         navigationMenu = binding.navigationMenu;
 
         setupReadingMode();
@@ -230,6 +231,11 @@ public class ReaderFragment extends Fragment {
             Log.e("MangaApp", "[ReaderFragment] Next button clicked");
             navigateToNext();
         });
+
+        // Додаємо обробку кліку по кнопці коментарів
+        if (btnComments != null) {
+            btnComments.setOnClickListener(v -> showComments());
+        }
         
         // Обробка дотиків по центру екрану для показу/скриття меню
         View.OnClickListener centerClickListener = v -> {
@@ -256,6 +262,15 @@ public class ReaderFragment extends Fragment {
             }
         };
         viewPager.registerOnPageChangeCallback(pageChangeCallback);
+    }
+
+    private void showComments() {
+        if (chapterId != null) {
+            CommentsBottomSheetDialogFragment commentsFragment = CommentsBottomSheetDialogFragment.newInstance(chapterId);
+            commentsFragment.show(getParentFragmentManager(), "CommentsSheet");
+        } else {
+            Toast.makeText(getContext(), "Помилка завантаження глави", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void toggleNavigationMenu() {

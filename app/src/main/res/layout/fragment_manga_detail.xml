@@ -67,7 +67,6 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="24dp"
             android:orientation="horizontal"
-            android:weightSum="2"
             app:layout_constraintTop_toBottomOf="@id/language_chip_group">
 
             <Button
@@ -75,7 +74,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginEnd="8dp"
+                android:layout_marginEnd="4dp"
                 android:text="Читати"
                 android:textColor="@color/white"
                 app:backgroundTint="@color/purple_500" />
@@ -85,11 +84,21 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="8dp"
+                android:layout_marginEnd="4dp"
+                android:layout_marginStart="4dp"
                 android:text="До колекції"
                 android:textColor="@color/white"
-                app:backgroundTint="@color/teal_700"
-                app:icon="@android:drawable/ic_input_add" />
+                app:backgroundTint="@color/teal_700" />
+
+            <Button
+                android:id="@+id/reviews_button"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:text="Відгуки"
+                android:textColor="@color/white"
+                app:backgroundTint="@color/purple_700" />
         </LinearLayout>
 
         <ProgressBar

@@ -17,6 +17,7 @@
 
     <!-- Додані кольори для нових компонентів -->
     <color name="red_error">#F44336</color>
+    <color name="red">#F44336</color>
     <color name="card_background">#1E1E1E</color>
     <color name="dark_gray_background">#121212</color>
     <color name="gray_600">#757575</color>
