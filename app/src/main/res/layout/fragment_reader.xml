@@ -94,6 +94,18 @@
             android:padding="2dp"
             android:contentDescription="Коментарі" />
 
+        <!-- Кнопка формату читання -->
+        <ImageView
+            android:id="@+id/btn_reading_mode"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginStart="16dp"
+            android:src="@drawable/ic_eye"
+            app:tint="@color/white"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="2dp"
+            android:contentDescription="Змінити формат читання" />
+
     </LinearLayout>
 
     <ProgressBar

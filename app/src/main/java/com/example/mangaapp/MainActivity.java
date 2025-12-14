@@ -21,6 +21,7 @@ import androidx.appcompat.app.AppCompatDelegate;
 
 import com.example.mangaapp.databinding.ActivityMainBinding;
 import com.example.mangaapp.utils.AuthManager;
+import com.example.mangaapp.api.AccountApiClient;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -44,12 +45,13 @@ public class MainActivity extends AppCompatActivity {
 
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
 
-        // Initialize auth manager before setting up bottom nav listener
+        // Initialize auth manager and API client before setting up bottom nav listener
         authManager = AuthManager.getInstance(this);
+        AccountApiClient.initialize(this);
 
         mAppBarConfiguration = new AppBarConfiguration.Builder(
-            R.id.nav_home, R.id.nav_search, R.id.nav_account, R.id.collectionsFragment)
-            .build();
+                R.id.nav_home, R.id.nav_search, R.id.nav_account, R.id.collectionsFragment)
+                .build();
 
         NavigationUI.setupActionBarWithNavController(this, navController, mAppBarConfiguration);
 
@@ -61,22 +63,18 @@ public class MainActivity extends AppCompatActivity {
             if (isUpdatingMenuSelection) {
                 return true;
             }
-            
+
             int id = item.getItemId();
             if (id == R.id.collectionsFragment) {
-                 if (authManager.isLoggedIn()) {
+                if (authManager.isLoggedIn()) {
                     // Use global action to navigate to collections
                     navController.navigate(R.id.action_global_to_collectionsFragment);
                     return true;
-                 } else {
-                     Toast.makeText(this, "Будь ласка, увійдіть в акаунт", Toast.LENGTH_SHORT).show();
-                     return false; // Don't select the item
-                 }
+                } else {
+                    Toast.makeText(this, "Будь ласка, увійдіть в акаунт", Toast.LENGTH_SHORT).show();
+                    return false; // Don't select the item
+                }
             }
-           // if (id == R.id.nav_favorites) {
-           //     Toast.makeText(this, "Вікно зараз не доступне", Toast.LENGTH_SHORT).show();
-           //     return false;
-//}
             // For all other menu items (nav_home, nav_search, nav_account), navigate directly
             // WITHOUT calling NavigationUI.onNavDestinationSelected to avoid double-setting selection
             if (id == R.id.nav_home) {
@@ -108,7 +106,6 @@ public class MainActivity extends AppCompatActivity {
         currentReadingMode = prefs.getString("reading_mode", "horizontal");
         Log.e("MangaApp", "[MainActivity] Loaded reading mode: " + currentReadingMode);
 
-        authManager = AuthManager.getInstance(this);
         checkAuthStatus();
         setupFragmentTransitions();
     }
@@ -121,11 +118,14 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    // Видалити цей метод (або закоментувати)
+    /*
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
         return true;
     }
+    */
 
     @Override
     public boolean onSupportNavigateUp() {
@@ -134,47 +134,17 @@ public class MainActivity extends AppCompatActivity {
                 || super.onSupportNavigateUp();
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-
-        if (id == R.id.action_settings) {
-            Toast.makeText(this, "Налаштування", Toast.LENGTH_SHORT).show();
-            return true;
-        } else if (id == R.id.action_language) {
-            Toast.makeText(this, "Вибір мови", Toast.LENGTH_SHORT).show();
-            return true;
-        } else if (id == R.id.action_reading_mode) {
-            toggleReadingMode();
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    private void toggleReadingMode() {
-        currentReadingMode = currentReadingMode.equals("horizontal") ? "vertical" : "horizontal";
-
-        SharedPreferences prefs = getSharedPreferences("MangaAppPrefs", Context.MODE_PRIVATE);
-        prefs.edit().putString("reading_mode", currentReadingMode).apply();
-
-        String message = currentReadingMode.equals("vertical") ?
-                "Режим читання змінено на вертикальний" :
-                "Режим читання змінено на горизонтальний";
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-
-        ReaderFragment readerFragment = (ReaderFragment) getSupportFragmentManager()
-                .findFragmentByTag("reader_fragment");
-        if (readerFragment != null) {
-            readerFragment.setReadingMode(currentReadingMode);
-        }
-
-        Log.e("MangaApp", "[MainActivity] Reading mode toggled to: " + currentReadingMode);
-    }
-
     private void checkAuthStatus() {
         if (authManager.isLoggedIn()) {
-            Log.d("MainActivity", "User is logged in: " + authManager.getCurrentUser().getLogin());
+            Log.d("MainActivity", "User is logged in: " +
+                    (authManager.getCurrentUser() != null ? authManager.getCurrentUser().getLogin() : "unknown"));
+
+            // Відновлюємо сесію при старті додатка
+            if (!authManager.shouldCheckToken()) {
+                authManager.setShouldCheckToken(true);
+                Log.d("MainActivity", "Restoring session on app start");
+            }
+
             authManager.refreshUserData(this);
         } else {
             Log.d("MainActivity", "User is not logged in");

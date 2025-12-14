@@ -36,12 +36,17 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import java.util.concurrent.atomic.AtomicInteger;
 import android.graphics.Rect;
+import android.widget.EditText;
+import android.view.KeyEvent;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.widget.TextView;
 
 public class SearchFragment extends Fragment {
     private RecyclerView mangaGrid;
     private ProgressBar progressBar;
     private MangaAdapter adapter;
-    private androidx.appcompat.widget.SearchView searchView;
+    private EditText searchInput;
     private MaterialButton genreButton;
     private String selectedLanguage = "en";
     private List<String> selectedGenreIds = new ArrayList<>();
@@ -62,7 +67,7 @@ public class SearchFragment extends Fragment {
 
         mangaGrid = root.findViewById(R.id.manga_grid);
         progressBar = root.findViewById(R.id.progress_bar);
-        searchView = root.findViewById(R.id.search_view);
+        searchInput = root.findViewById(R.id.search_input);
         genreButton = root.findViewById(R.id.genre_button);
 
         // Налаштування GridLayoutManager для центрування
@@ -74,13 +79,13 @@ public class SearchFragment extends Fragment {
             }
         });
         mangaGrid.setLayoutManager(layoutManager);
-        
+
         // Додавання відступів для центрування
         int spacing = getResources().getDimensionPixelSize(R.dimen.grid_spacing);
         mangaGrid.addItemDecoration(new RecyclerView.ItemDecoration() {
             @Override
-            public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, 
-                                     @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+            public void getItemOffsets(@NonNull Rect outRect, @NonNull View view,
+                                       @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
                 outRect.left = spacing;
                 outRect.right = spacing;
                 outRect.top = spacing;
@@ -88,38 +93,70 @@ public class SearchFragment extends Fragment {
             }
         });
 
-        int id = searchView.getContext().getResources().getIdentifier("android:id/search_src_text", null, null);
-        android.widget.TextView textView = searchView.findViewById(id);
-        if (textView != null) {
-            textView.setTextColor(android.graphics.Color.WHITE);
-            textView.setHintTextColor(android.graphics.Color.WHITE);
-        }
-
         // Обробник натискання на кнопку "Жанр"
         genreButton.setOnClickListener(v -> {
+            // Ховаємо клавіатуру при кліку на кнопку жанру
+            hideKeyboard();
             showGenreSelectionDialog();
         });
 
-        searchView.setOnQueryTextListener(new androidx.appcompat.widget.SearchView.OnQueryTextListener() {
+        // Обробник для кнопки "Пошук" на клавіатурі
+        searchInput.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
-            public boolean onQueryTextSubmit(String query) {
-                performSearch(query);
-                return true;
-            }
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                if (newText.isEmpty() && selectedGenreIds.isEmpty()) {
-                    // Якщо поле порожнє і жанри не вибрані, очищаємо результат
-                    adapter = new MangaAdapter(new ArrayList<>(), manga -> {});
-                    mangaGrid.setAdapter(adapter);
-                } else {
-                    performSearch(newText);
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                    performSearch(v.getText().toString());
+                    hideKeyboard();
+                    return true;
                 }
                 return false;
             }
         });
 
+        // Обробник зміни тексту (пошук по міру введення)
+        searchInput.addTextChangedListener(new android.text.TextWatcher() {
+            private android.os.Handler handler = new android.os.Handler();
+            private Runnable runnable;
+
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (runnable != null) {
+                    handler.removeCallbacks(runnable);
+                }
+
+                runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        String query = s.toString();
+                        if (query.isEmpty() && selectedGenreIds.isEmpty()) {
+                            // Якщо поле порожнє і жанри не вибрані, очищаємо результат
+                            adapter = new MangaAdapter(new ArrayList<>(), manga -> {});
+                            mangaGrid.setAdapter(adapter);
+                        } else {
+                            performSearch(query);
+                        }
+                    }
+                };
+
+                // Дебаунс 500ms для запобігання занадто частого пошуку
+                handler.postDelayed(runnable, 500);
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {}
+        });
+
         return root;
+    }
+
+    private void hideKeyboard() {
+        InputMethodManager imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+        if (imm != null && searchInput != null) {
+            imm.hideSoftInputFromWindow(searchInput.getWindowToken(), 0);
+        }
     }
 
     private void performSearch(String query) {
@@ -188,7 +225,7 @@ public class SearchFragment extends Fragment {
                             }
                             continue;
                         }
-                        
+
                         // Створюємо фінальні копії змінних для використання у внутрішньому класі
                         final String mangaId = data.getId();
                         final Map<String, String> titles = data.getAttributes().getTitle();
@@ -313,8 +350,8 @@ public class SearchFragment extends Fragment {
         android.widget.ProgressBar genreProgressBar = dialogView.findViewById(R.id.genre_progress_bar);
 
         // Налаштування RecyclerView для жанрів
-        androidx.recyclerview.widget.GridLayoutManager genreLayoutManager = 
-            new androidx.recyclerview.widget.GridLayoutManager(getContext(), 3);
+        androidx.recyclerview.widget.GridLayoutManager genreLayoutManager =
+                new androidx.recyclerview.widget.GridLayoutManager(getContext(), 3);
         genreRecyclerView.setLayoutManager(genreLayoutManager);
 
         GenreAdapter genreAdapter = new GenreAdapter();
@@ -326,7 +363,7 @@ public class SearchFragment extends Fragment {
                 .setView(dialogView)
                 .setPositiveButton("Пошук", (dialog, which) -> {
                     selectedGenreIds = genreAdapter.getSelectedGenreIds();
-                    String query = searchView.getQuery().toString();
+                    String query = searchInput.getText().toString();
                     performSearch(query);
                 })
                 .setNegativeButton("Скасувати", (dialog, which) -> dialog.dismiss())
@@ -398,5 +435,11 @@ public class SearchFragment extends Fragment {
             }
         });
     }
-}
 
+    @Override
+    public void onPause() {
+        super.onPause();
+        // Ховаємо клавіатуру при зміні фрагмента
+        hideKeyboard();
+    }
+}

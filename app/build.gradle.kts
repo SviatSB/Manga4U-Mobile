@@ -46,6 +46,7 @@ dependencies {
     implementation("androidx.navigation:navigation-ui:2.5.3")
     implementation ("androidx.navigation:navigation-ui:2.5.3")
 
+    implementation("com.google.android.material:material:1.11.0")
     // Retrofit для HTTP-запитів
     implementation ("com.squareup.retrofit2:retrofit:2.9.0")
     implementation ("com.squareup.retrofit2:converter-gson:2.9.0")

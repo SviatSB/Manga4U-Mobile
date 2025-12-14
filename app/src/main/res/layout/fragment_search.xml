@@ -7,23 +7,35 @@
     android:background="@color/dark_background"
     tools:context=".fragments.main.SearchFragment">
 
+    <!-- Пошукова панель -->
     <LinearLayout
         android:id="@+id/search_container"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_margin="8dp"
+        android:layout_margin="16dp"
         android:orientation="horizontal"
+        android:background="@color/card_background"
+        android:padding="12dp"
+        android:elevation="4dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <androidx.appcompat.widget.SearchView
-            android:id="@+id/search_view"
+        <!-- Поле пошуку - завжди розгорнуте -->
+        <EditText
+            android:id="@+id/search_input"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:queryHint="Пошук манги..." />
+            android:background="@null"
+            android:hint="Пошук манги..."
+            android:textColor="@color/white"
+            android:textColorHint="@color/gray_400"
+            android:imeOptions="actionSearch"
+            android:singleLine="true"
+            android:maxLines="1" />
 
+        <!-- Кнопка "Жанр" -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/genre_button"
             android:layout_width="wrap_content"
@@ -34,8 +46,10 @@
             app:backgroundTint="@android:color/transparent"
             app:strokeColor="@color/purple_accent"
             app:strokeWidth="1dp" />
+
     </LinearLayout>
 
+    <!-- Результати пошуку -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/manga_grid"
         android:layout_width="match_parent"
@@ -50,6 +64,7 @@
         app:spanCount="3"
         tools:listitem="@layout/manga_item" />
 
+    <!-- Прогрес-бар -->
     <com.google.android.material.progressindicator.CircularProgressIndicator
         android:id="@+id/progress_bar"
         android:layout_width="wrap_content"
@@ -63,4 +78,3 @@
         app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
-

@@ -19,6 +19,7 @@ import android.view.animation.AnimationUtils;
 import androidx.navigation.Navigation;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.viewpager2.widget.ViewPager2;
 import androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback;
@@ -67,10 +68,10 @@ public class ReaderFragment extends Fragment {
     private boolean isInitialized = false;
     private float initialX = 0;
     private float initialY = 0;
-    
+
     // Нові поля для навігації
     private TextView chapterInfo;
-    private ImageView btnPrevious, btnNext, btnComments;
+    private ImageView btnPrevious, btnNext, btnComments, btnReadingMode;
     private View navigationMenu;
     private boolean isNavigationMenuVisible = true;
     private List<ChapterFeedResponse.Result> allChapters = new ArrayList<>();
@@ -89,7 +90,7 @@ public class ReaderFragment extends Fragment {
             mangaTitle = getArguments().getString("mangaTitle", "");
             Log.e("MangaApp", "[ReaderFragment] Created with mangaId: " + mangaId + ", chapterId: " + chapterId);
         }
-        
+
         authManager = AuthManager.getInstance(requireContext());
 
         SharedPreferences prefs = requireContext().getSharedPreferences("MangaAppPrefs", Context.MODE_PRIVATE);
@@ -107,18 +108,19 @@ public class ReaderFragment extends Fragment {
         viewPager = binding.pager;
         verticalScroll = binding.verticalScroll;
         verticalContainer = binding.verticalContainer;
-        
+
         // Ініціалізація елементів навігації
         chapterInfo = binding.chapterInfo;
         btnPrevious = binding.btnPrevious;
         btnNext = binding.btnNext;
         btnComments = binding.btnComments;
+        btnReadingMode = binding.btnReadingMode;
         navigationMenu = binding.navigationMenu;
 
         setupReadingMode();
         setupNavigationButtons();
         setupTouchHandling();
-        
+
         if (!isInitialized) {
             loadChapter();
             loadAllChapters();
@@ -129,7 +131,7 @@ public class ReaderFragment extends Fragment {
                 loadCurrentPage();
             }
         }
-        
+
         return root;
     }
 
@@ -137,7 +139,7 @@ public class ReaderFragment extends Fragment {
         if ("vertical".equals(readingMode)) {
             viewPager.setVisibility(View.GONE);
             verticalScroll.setVisibility(View.VISIBLE);
-            
+
             // Додаємо обробник дотиків для навігації
             verticalScroll.setOnTouchListener((v, event) -> {
                 switch (event.getAction()) {
@@ -145,16 +147,16 @@ public class ReaderFragment extends Fragment {
                         startX = event.getX();
                         startY = event.getY();
                         return false;
-                        
+
                     case MotionEvent.ACTION_UP:
                         float endX = event.getX();
                         float endY = event.getY();
                         float deltaX = endX - startX;
                         float deltaY = endY - startY;
-                        
+
                         // Обчислюємо кут свайпу
                         double angle = Math.abs(Math.toDegrees(Math.atan2(deltaY, deltaX)));
-                        
+
                         // Перевіряємо, чи це був свайп і в якому напрямку
                         if (Math.abs(deltaX) > SWIPE_THRESHOLD || Math.abs(deltaY) > SWIPE_THRESHOLD) {
                             // Якщо кут менше порогу - це горизонтальний свайп
@@ -179,7 +181,7 @@ public class ReaderFragment extends Fragment {
             viewPager.setVisibility(View.VISIBLE);
             verticalScroll.setVisibility(View.GONE);
             viewPager.setOrientation(ViewPager2.ORIENTATION_HORIZONTAL);
-            
+
             // Додаємо обробник дотиків для навігації в горизонтальному режимі
             viewPager.setOnTouchListener((v, event) -> {
                 switch (event.getAction()) {
@@ -187,13 +189,13 @@ public class ReaderFragment extends Fragment {
                         startX = event.getX();
                         startY = event.getY();
                         return false;
-                        
+
                     case MotionEvent.ACTION_UP:
                         float endX = event.getX();
                         float endY = event.getY();
                         float deltaX = endX - startX;
                         float deltaY = endY - startY;
-                        
+
                         // Перевіряємо, чи це був свайп
                         if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
                             if (deltaX > 0) {
@@ -221,7 +223,7 @@ public class ReaderFragment extends Fragment {
     }
 
     private OnPageChangeCallback pageChangeCallback;
-    
+
     private void setupNavigationButtons() {
         btnPrevious.setOnClickListener(v -> {
             Log.e("MangaApp", "[ReaderFragment] Previous button clicked");
@@ -236,17 +238,22 @@ public class ReaderFragment extends Fragment {
         if (btnComments != null) {
             btnComments.setOnClickListener(v -> showComments());
         }
-        
+
+        // Додаємо обробку кліку по кнопці формату читання
+        if (btnReadingMode != null) {
+            btnReadingMode.setOnClickListener(v -> toggleReadingMode());
+        }
+
         // Обробка дотиків по центру екрану для показу/скриття меню
         View.OnClickListener centerClickListener = v -> {
             Log.e("MangaApp", "[ReaderFragment] Center clicked, toggling navigation menu");
             toggleNavigationMenu();
         };
-        
+
         // Додаємо обробники дотиків до основних контейнерів
         viewPager.setOnClickListener(centerClickListener);
         verticalScroll.setOnClickListener(centerClickListener);
-        
+
         // Додаємо обробник дотиків до PhotoView у горизонтальному режимі
         pageChangeCallback = new OnPageChangeCallback() {
             @Override
@@ -264,10 +271,37 @@ public class ReaderFragment extends Fragment {
         viewPager.registerOnPageChangeCallback(pageChangeCallback);
     }
 
+    private void toggleReadingMode() {
+        String newMode = readingMode.equals("horizontal") ? "vertical" : "horizontal";
+        setReadingMode(newMode);
+
+        String message = newMode.equals("vertical") ?
+                "Режим читання змінено на вертикальний" :
+                "Режим читання змінено на горизонтальний";
+        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+
+        // Змінюємо іконку залежно від режиму
+        updateReadingModeIcon();
+    }
+
+    private void updateReadingModeIcon() {
+        if (btnReadingMode != null) {
+            // Використовуємо стандартні кольори
+            if (readingMode.equals("horizontal")) {
+                btnReadingMode.setColorFilter(ContextCompat.getColor(requireContext(), android.R.color.white));
+            } else {
+                // Фіолетовий колір для вертикального режиму
+                btnReadingMode.setColorFilter(ContextCompat.getColor(requireContext(), android.R.color.holo_purple));
+            }
+        }
+    }
+
     private void showComments() {
         if (chapterId != null) {
-            CommentsBottomSheetDialogFragment commentsFragment = CommentsBottomSheetDialogFragment.newInstance(chapterId);
-            commentsFragment.show(getParentFragmentManager(), "CommentsSheet");
+            // Використовуємо Bottom Sheet замість повноекранного фрагмента
+            CommentsBottomSheetDialogFragment commentsFragment =
+                    CommentsBottomSheetDialogFragment.newInstance(chapterId, currentPage);
+            commentsFragment.show(getParentFragmentManager(), "comments_bottom_sheet");
         } else {
             Toast.makeText(getContext(), "Помилка завантаження глави", Toast.LENGTH_SHORT).show();
         }
@@ -299,7 +333,7 @@ public class ReaderFragment extends Fragment {
         if (currentPage > 0) {
             // Перехід на попередню сторінку в поточній главі
             currentPage--;
-            
+
             if ("horizontal".equals(readingMode)) {
                 // У горизонтальному режимі синхронізуємо з ViewPager2
                 Log.e("MangaApp", "[ReaderFragment] Horizontal mode: setting ViewPager2 to page " + currentPage);
@@ -309,7 +343,7 @@ public class ReaderFragment extends Fragment {
                 Log.e("MangaApp", "[ReaderFragment] Vertical mode: loading page " + currentPage);
                 loadCurrentPage();
             }
-            
+
             saveCurrentPage();
             updateChapterInfo();
             Log.e("MangaApp", "[ReaderFragment] Moved to previous page: " + currentPage);
@@ -329,7 +363,7 @@ public class ReaderFragment extends Fragment {
         if (currentPage < imageUrls.size() - 1) {
             // Перехід на наступну сторінку в поточній главі
             currentPage++;
-            
+
             if ("horizontal".equals(readingMode)) {
                 // У горизонтальному режимі синхронізуємо з ViewPager2
                 Log.e("MangaApp", "[ReaderFragment] Horizontal mode: setting ViewPager2 to page " + currentPage);
@@ -339,7 +373,7 @@ public class ReaderFragment extends Fragment {
                 Log.e("MangaApp", "[ReaderFragment] Vertical mode: loading page " + currentPage);
                 loadCurrentPage();
             }
-            
+
             saveCurrentPage();
             updateChapterInfo();
             Log.e("MangaApp", "[ReaderFragment] Moved to next page: " + currentPage);
@@ -359,16 +393,16 @@ public class ReaderFragment extends Fragment {
             ChapterFeedResponse.Result chapter = allChapters.get(chapterIndex);
             currentChapterIndex = chapterIndex;
             chapterId = chapter.getId();
-            
+
             // Оновлюємо інформацію про главу
             if (chapter.getAttributes() != null) {
                 currentChapterTitle = chapter.getAttributes().getTitle();
                 currentChapterNumber = chapter.getAttributes().getChapter();
             }
-            
+
             // Завантажуємо нову главу
             loadChapter();
-            
+
             // Встановлюємо потрібну сторінку
             if (pageIndex == -1) {
                 // Остання сторінка
@@ -377,7 +411,7 @@ public class ReaderFragment extends Fragment {
                 // Перша сторінка
                 currentPage = 0;
             }
-            
+
             // Синхронізуємо з ViewPager2 у горизонтальному режимі
             if ("horizontal".equals(readingMode) && viewPager != null && !imageUrls.isEmpty()) {
                 int safePage = Math.min(currentPage, imageUrls.size() - 1);
@@ -386,7 +420,7 @@ public class ReaderFragment extends Fragment {
                 currentPage = safePage;
                 Log.e("MangaApp", "[ReaderFragment] Synced ViewPager2 to page " + currentPage + " after chapter change");
             }
-            
+
             updateChapterInfo();
             // Оновлюємо історію при переході на нову главу
             updateHistory();
@@ -395,8 +429,8 @@ public class ReaderFragment extends Fragment {
 
     private void updateChapterInfo() {
         if (chapterInfo != null && !imageUrls.isEmpty()) {
-            String info = String.format("Глава %s, сторінка %d/%d", 
-                currentChapterNumber, currentPage + 1, imageUrls.size());
+            String info = String.format("Глава %s, сторінка %d/%d",
+                    currentChapterNumber, currentPage + 1, imageUrls.size());
             chapterInfo.setText(info);
             Log.e("MangaApp", "[ReaderFragment] Updated chapter info: " + info);
         } else {
@@ -412,7 +446,7 @@ public class ReaderFragment extends Fragment {
         langs.add("uk");
         langs.add("ru");
         langs.add("ja");
-        
+
         Call<ChapterFeedResponse> call = apiService.getMangaChapters("manga/" + mangaId + "/feed", 100, 0, "asc", langs);
         call.enqueue(new Callback<ChapterFeedResponse>() {
             @Override
@@ -420,7 +454,7 @@ public class ReaderFragment extends Fragment {
                 if (response.isSuccessful() && response.body() != null) {
                     allChapters = response.body().getData();
                     Log.e("MangaApp", "[ReaderFragment] Loaded " + allChapters.size() + " chapters");
-                    
+
                     // Знаходимо поточну главу
                     for (int i = 0; i < allChapters.size(); i++) {
                         if (allChapters.get(i).getId().equals(chapterId)) {
@@ -434,7 +468,7 @@ public class ReaderFragment extends Fragment {
                             break;
                         }
                     }
-                    
+
                     updateChapterInfo();
                 } else {
                     Log.e("MangaApp", "[ReaderFragment] Failed to load chapters - response not successful");
@@ -460,15 +494,15 @@ public class ReaderFragment extends Fragment {
         if (imageUrls.isEmpty() || currentPage < 0 || currentPage >= imageUrls.size()) {
             return;
         }
-        
+
         verticalContainer.removeAllViews();
-        
+
         currentPageView = new PhotoView(requireContext());
         currentPageView.setLayoutParams(new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
         ));
-        
+
         // Додаємо обробку дотиків до PhotoView
         currentPageView.setOnTouchListener((v, event) -> {
             switch (event.getAction()) {
@@ -480,11 +514,11 @@ public class ReaderFragment extends Fragment {
                 case MotionEvent.ACTION_UP:
                     float deltaX = event.getX() - initialX;
                     float deltaY = event.getY() - initialY;
-                    
+
                     // Перевіряємо, чи дотик був біля краю екрану (в межах 20% ширини екрану)
                     float screenWidth = getResources().getDisplayMetrics().widthPixels;
                     float edgeThreshold = screenWidth * 0.2f;
-                    
+
                     if (Math.abs(deltaX) < 50 && Math.abs(deltaY) < 50) { // Маленький рух, щоб уникнути спрацьовування при скролінгу
                         if (initialX < edgeThreshold) {
                             // Дотик по лівому краю - перехід на попередню сторінку
@@ -504,7 +538,7 @@ public class ReaderFragment extends Fragment {
             }
             return false;
         });
-        
+
         // Додаємо обробник дотиків по центру для показу/скриття меню
         currentPageView.setOnClickListener(v -> {
             // Додатковий обробник для дотиків по центру
@@ -514,23 +548,23 @@ public class ReaderFragment extends Fragment {
                 toggleNavigationMenu();
             }
         });
-        
+
         verticalContainer.addView(currentPageView);
-        
+
         Glide.with(requireContext())
-            .load(imageUrls.get(currentPage))
-            .override(Target.SIZE_ORIGINAL)
-            .diskCacheStrategy(DiskCacheStrategy.ALL)
-            .into(currentPageView);
+                .load(imageUrls.get(currentPage))
+                .override(Target.SIZE_ORIGINAL)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .into(currentPageView);
 
         // Попереднє завантаження наступної сторінки
         if (currentPage + 1 < imageUrls.size()) {
             Glide.with(requireContext())
-                .load(imageUrls.get(currentPage + 1))
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .preload();
+                    .load(imageUrls.get(currentPage + 1))
+                    .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .preload();
         }
-        
+
         // Оновлюємо інформацію про главу
         updateChapterInfo();
     }
@@ -568,12 +602,12 @@ public class ReaderFragment extends Fragment {
                                     } else {
                                         ImagePagerAdapter adapter = new ImagePagerAdapter(imageUrls, readingMode);
                                         viewPager.setAdapter(adapter);
-                                        
+
                                         // Встановлюємо початкову позицію у ViewPager2
                                         int initialPage = Math.min(currentPage, imageUrls.size() - 1);
                                         initialPage = Math.max(initialPage, 0);
                                         viewPager.setCurrentItem(initialPage, false);
-                                        
+
                                         // Оновлюємо історію після завантаження глави
                                         updateHistory();
                                         currentPage = initialPage;
@@ -581,7 +615,7 @@ public class ReaderFragment extends Fragment {
                                     }
                                     progressBar.setVisibility(View.GONE);
                                     Log.e("MangaApp", "[ReaderFragment] Set up display with " + imageUrls.size() + " images");
-                                    
+
                                     // Оновлюємо інформацію про главу після завантаження
                                     updateChapterInfo();
                                 } else {
@@ -619,9 +653,9 @@ public class ReaderFragment extends Fragment {
             readingMode = mode;
             SharedPreferences prefs = requireContext().getSharedPreferences("MangaAppPrefs", Context.MODE_PRIVATE);
             prefs.edit().putString("reading_mode", mode).apply();
-            
+
             setupReadingMode();
-            
+
             if ("vertical".equals(mode) && !imageUrls.isEmpty()) {
                 // У вертикальному режимі завантажуємо поточну сторінку
                 loadCurrentPage();
@@ -634,10 +668,13 @@ public class ReaderFragment extends Fragment {
                 viewPager.setCurrentItem(currentPosition, false);
                 currentPage = currentPosition; // Синхронізуємо currentPage
             }
-            
+
             // Оновлюємо інформацію про главу
             updateChapterInfo();
-            
+
+            // Оновлюємо іконку
+            updateReadingModeIcon();
+
             Log.e("MangaApp", "[ReaderFragment] Reading mode changed to: " + mode + ", currentPage: " + currentPage);
         }
     }
@@ -646,21 +683,21 @@ public class ReaderFragment extends Fragment {
         SharedPreferences prefs = requireContext().getSharedPreferences("MangaAppPrefs", Context.MODE_PRIVATE);
         prefs.edit().putInt("last_page_" + chapterId, currentPage).apply();
     }
-    
+
     private void updateHistory() {
         if (!authManager.isLoggedIn() || mangaId == null || chapterId == null) {
             return;
         }
-        
+
         String token = authManager.getAuthToken();
         if (token == null) {
             return;
         }
-        
+
         // Отримуємо мову з SharedPreferences
         SharedPreferences prefs = requireContext().getSharedPreferences("MangaAppPrefs", Context.MODE_PRIVATE);
         String language = prefs.getString("selected_language", "en");
-        
+
         // Конвертуємо номер глави в int
         int chapterNumber = 1; // Значення за замовчуванням (валідатор вимагає > 0)
         try {
@@ -677,9 +714,9 @@ public class ReaderFragment extends Fragment {
             Log.e("ReaderFragment", "Error parsing chapter number: " + currentChapterNumber, e);
             chapterNumber = 1; // Якщо не вдалося розпарсити, використовуємо 1
         }
-        
+
         String chapterTitle = currentChapterTitle != null && !currentChapterTitle.isEmpty() ? currentChapterTitle : "Перегляд манги";
-        
+
         // Перевірка на null/порожні значення
         if (mangaId == null || mangaId.isEmpty()) {
             Log.e("ReaderFragment", "MangaId is null or empty, cannot update history");
@@ -692,23 +729,23 @@ public class ReaderFragment extends Fragment {
         if (language == null || language.isEmpty()) {
             language = "en"; // Значення за замовчуванням
         }
-        
+
         Log.d("ReaderFragment", "Updating history with:");
         Log.d("ReaderFragment", "  MangaId: " + mangaId);
         Log.d("ReaderFragment", "  ChapterId: " + chapterId);
         Log.d("ReaderFragment", "  Language: " + language);
         Log.d("ReaderFragment", "  ChapterTitle: " + chapterTitle);
         Log.d("ReaderFragment", "  ChapterNumber: " + chapterNumber);
-        
+
         AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
         AccountApiService.UpdateHistoryRequest request = new AccountApiService.UpdateHistoryRequest(
-            mangaId,
-            chapterId,
-            language,
-            chapterTitle,
-            chapterNumber
+                mangaId,
+                chapterId,
+                language,
+                chapterTitle,
+                chapterNumber
         );
-        
+
         Call<ResponseBody> call = apiService.updateHistory("Bearer " + token, request);
         call.enqueue(new Callback<ResponseBody>() {
             @Override
@@ -727,7 +764,7 @@ public class ReaderFragment extends Fragment {
                     }
                 }
             }
-            
+
             @Override
             public void onFailure(@NonNull Call<ResponseBody> call, @NonNull Throwable t) {
                 Log.e("ReaderFragment", "Error updating history", t);
@@ -744,12 +781,12 @@ public class ReaderFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         saveCurrentPage();
-        
+
         // Очищаємо callback для ViewPager2
         if (viewPager != null && pageChangeCallback != null) {
             viewPager.unregisterOnPageChangeCallback(pageChangeCallback);
         }
-        
+
         binding = null;
     }
 
@@ -765,11 +802,11 @@ public class ReaderFragment extends Fragment {
                 case MotionEvent.ACTION_UP:
                     float deltaX = event.getX() - initialX;
                     float deltaY = event.getY() - initialY;
-                    
+
                     // Перевіряємо, чи дотик був біля краю екрану (в межах 20% ширини екрану)
                     float screenWidth = getResources().getDisplayMetrics().widthPixels;
                     float edgeThreshold = screenWidth * 0.2f;
-                    
+
                     if (Math.abs(deltaX) < 50 && Math.abs(deltaY) < 50) { // Маленький рух, щоб уникнути спрацьовування при скролінгу
                         if (initialX < edgeThreshold) {
                             // Дотик по лівому краю - перехід на попередню сторінку

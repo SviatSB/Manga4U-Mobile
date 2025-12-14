@@ -91,9 +91,20 @@ public class AccountFragment extends Fragment implements
         if (authManager.isLoggedIn()) {
             authToken = authManager.getAuthToken();
             currentUser = authManager.getCurrentUser();
+
+            // Спроба відновити сесію, якщо токен м'яко залогінений
+            if (!authManager.shouldCheckToken() && authToken != null) {
+                // Токен є, але перевірка вимкнена (можливо через 401)
+                // Пробуємо відновити сесію при наступному запиті
+                authManager.setShouldCheckToken(true);
+                Log.d("AccountFragment", "Attempting to restore session on resume");
+            }
+
             // Якщо дані є, оновлюємо відображення
             if (currentUser != null) {
                 updateUserInfo();
+                // Завантажуємо історію
+                loadHistory();
             } else {
                 // Якщо даних немає, завантажуємо з серверу
                 loadUserProfile();
@@ -187,6 +198,14 @@ public class AccountFragment extends Fragment implements
     }
 
     private void loadUserProfile() {
+        if (!authManager.isLoggedIn() || !authManager.shouldCheckToken()) {
+            // Не завантажуємо профіль, якщо не потрібно перевіряти токен
+            if (currentUser != null) {
+                updateUserInfo();
+            }
+            return;
+        }
+
         AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
 
         // Спочатку спробуємо отримати дані через новий API endpoint
@@ -204,6 +223,16 @@ public class AccountFragment extends Fragment implements
                     // Оновлюємо поточного користувача в AuthManager
                     authManager.saveAuthData(authToken, currentUser);
                     updateUserInfo();
+                } else if (response.code() == 401) {
+                    // 401 помилка - позначаємо, що не потрібно перевіряти токен
+                    authManager.softLogout();
+                    Log.d("AccountFragment", "Token expired (401) when loading profile");
+
+                    // Показуємо повідомлення про закінчення сесії, але не виходимо
+                    if (currentUser != null) {
+                        userLogin.setText(currentUser.getLogin() + " (сесія закінчилась)");
+                        Toast.makeText(getContext(), "Сесія закінчилась. Натисніть 'Вийти' для нового входу", Toast.LENGTH_LONG).show();
+                    }
                 } else {
                     // Якщо новий API не працює, спробуємо старий
                     loadUserProfileLegacy();
@@ -211,14 +240,20 @@ public class AccountFragment extends Fragment implements
             }
 
             @Override
-            public void onFailure(@NonNull Call<UserDto> call, @NonNull Throwable t) {
-                // Помилка мережі - спробуємо старий API
-                loadUserProfileLegacy();
+            public void onFailure(@NonNull Call<UserDto> call, Throwable t) {
+                // Помилка мережі - показуємо кешовані дані
+                if (currentUser != null) {
+                    updateUserInfo();
+                }
             }
         });
     }
 
     private void loadUserProfileLegacy() {
+        if (!authManager.shouldCheckToken()) {
+            return;
+        }
+
         AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
         Call<User> call = apiService.getUserProfile(authToken);
 
@@ -230,14 +265,15 @@ public class AccountFragment extends Fragment implements
                     // Зберігаємо дані в AuthManager
                     authManager.saveAuthData(authToken, currentUser);
                     updateUserInfo();
-                } else {
-                    // Токен недійсний
-                    logout();
+                } else if (response.code() == 401) {
+                    // 401 помилка - позначаємо, що не потрібно перевіряти токен
+                    authManager.softLogout();
+                    Log.d("AccountFragment", "Token expired (401) when loading legacy profile");
                 }
             }
 
             @Override
-            public void onFailure(@NonNull Call<User> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<User> call, Throwable t) {
                 // Помилка мережі - показуємо кешовані дані якщо є
                 if (currentUser != null) {
                     updateUserInfo();
@@ -258,11 +294,14 @@ public class AccountFragment extends Fragment implements
     }
 
     private void loadHistory() {
-        if (authToken == null) {
-            Log.e("AccountFragment", "Auth token is null, cannot load history");
+        if (authToken == null || !authManager.shouldCheckToken()) {
+            Log.e("AccountFragment", "Auth token is null or token check disabled, cannot load history");
+            if (!recentMangaList.isEmpty()) {
+                recentMangaAdapter.notifyDataSetChanged();
+            }
             return;
         }
-        
+
         AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
         Call<List<HistoryItem>> call = apiService.getHistory("Bearer " + authToken);
         Log.d("AccountFragment", "Requesting history with token: " + (authToken != null ? "present" : "null"));
@@ -274,16 +313,16 @@ public class AccountFragment extends Fragment implements
                     historyList.clear();
                     historyList.addAll(response.body());
                     Log.d("AccountFragment", "Loaded " + historyList.size() + " history items");
-                    
+
                     // Конвертуємо історію в RecentManga для відображення (останні 4)
                     recentMangaList.clear();
                     int count = Math.min(4, historyList.size());
                     Log.d("AccountFragment", "Converting " + count + " items to RecentManga");
-                    
+
                     for (int i = 0; i < count; i++) {
                         HistoryItem item = historyList.get(i);
                         Log.d("AccountFragment", "Item " + i + ": " + item.getMangaName() + ", Chapter: " + item.getLastChapterNumber());
-                        
+
                         // Конвертуємо дату
                         Date lastReadAt = null;
                         if (item.getUpdatedAt() != null && !item.getUpdatedAt().isEmpty()) {
@@ -302,25 +341,25 @@ public class AccountFragment extends Fragment implements
                                 Log.e("AccountFragment", "Error parsing date: " + item.getUpdatedAt(), e);
                             }
                         }
-                        
+
                         // Створюємо RecentManga з даних історії
                         RecentManga recentManga = new RecentManga(
-                            item.getMangaExternalId(),
-                            item.getMangaName(),
-                            null, // coverUrl - потрібно завантажити окремо
-                            item.getLastChapterTitle() != null ? item.getLastChapterTitle() : "",
-                            String.valueOf(item.getLastChapterNumber()),
-                            0, // currentPage - не зберігається в історії
-                            0, // totalPages - не зберігається в історії
-                            lastReadAt,
-                            item.getMangaExternalId(),
-                            item.getLastChapterId()
+                                item.getMangaExternalId(),
+                                item.getMangaName(),
+                                null, // coverUrl - потрібно завантажити окремо
+                                item.getLastChapterTitle() != null ? item.getLastChapterTitle() : "",
+                                String.valueOf(item.getLastChapterNumber()),
+                                0, // currentPage - не зберігається в історії
+                                0, // totalPages - не зберігається в історії
+                                lastReadAt,
+                                item.getMangaExternalId(),
+                                item.getLastChapterId()
                         );
                         recentMangaList.add(recentManga);
                     }
-                    
+
                     Log.d("AccountFragment", "Converted " + recentMangaList.size() + " items, notifying adapter");
-                    
+
                     // Перевіряємо, чи RecyclerView ініціалізований
                     if (recentMangaRecycler != null && recentMangaAdapter != null) {
                         recentMangaAdapter.notifyDataSetChanged();
@@ -384,10 +423,19 @@ public class AccountFragment extends Fragment implements
                     } catch (Exception e) {
                         Log.e("AccountFragment", "Error loading covers for recent items", e);
                     }
-                    
+
                     // Показуємо/ховаємо кнопку "Переглянути всі"
                     if (viewAllHistoryButton != null) {
                         viewAllHistoryButton.setVisibility(historyList.size() > 4 ? View.VISIBLE : View.GONE);
+                    }
+                } else if (response.code() == 401) {
+                    // 401 помилка - позначаємо, що не потрібно перевіряти токен
+                    authManager.softLogout();
+                    Log.d("AccountFragment", "Token expired (401) when loading history");
+
+                    // Показуємо кешовані дані
+                    if (!recentMangaList.isEmpty()) {
+                        recentMangaAdapter.notifyDataSetChanged();
                     }
                 } else {
                     Log.e("AccountFragment", "Error loading history: " + response.code());
@@ -402,7 +450,7 @@ public class AccountFragment extends Fragment implements
             }
 
             @Override
-            public void onFailure(@NonNull Call<List<HistoryItem>> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<List<HistoryItem>> call, Throwable t) {
                 Log.e("AccountFragment", "Error loading history", t);
                 // Помилка мережі - показуємо кешовані дані
                 if (!recentMangaList.isEmpty()) {
@@ -411,7 +459,7 @@ public class AccountFragment extends Fragment implements
             }
         });
     }
-    
+
     private void openHistoryFragment() {
         try {
             Navigation.findNavController(requireView()).navigate(R.id.action_account_to_history);
@@ -429,13 +477,13 @@ public class AccountFragment extends Fragment implements
             Toast.makeText(requireContext(), "Помилка відкриття колекцій", Toast.LENGTH_SHORT).show();
         }
     }
-    
+
     private void navigateToLastChapter(RecentManga manga) {
         if (manga.getChapterId() == null || manga.getMangaId() == null) {
             Toast.makeText(requireContext(), "Помилка: не вдалося знайти главу", Toast.LENGTH_SHORT).show();
             return;
         }
-        
+
         try {
             NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
             Bundle bundle = new Bundle();
@@ -481,10 +529,10 @@ public class AccountFragment extends Fragment implements
             // Завантаження аватара користувача
             String avatarUrl = currentUser.getAvatarUrl();
             Log.d("AccountFragment", "Avatar URL: " + avatarUrl);
-            
+
             // Спочатку встановлюємо placeholder
             userAvatar.setImageResource(R.drawable.ic_person);
-            
+
             if (avatarUrl != null && !avatarUrl.isEmpty()) {
                 Log.d("AccountFragment", "Loading avatar from URL: " + avatarUrl);
                 Glide.with(this)
@@ -534,12 +582,14 @@ public class AccountFragment extends Fragment implements
     }
 
     private void logout() {
-        // Очищаємо токен та дані користувача через AuthManager
+        // Тільки при натисканні кнопки "Вийти" видаляємо токен повністю
         authManager.logout();
         authToken = null;
         currentUser = null;
         recentMangaList.clear();
-        recentMangaAdapter.notifyDataSetChanged();
+        if (recentMangaAdapter != null) {
+            recentMangaAdapter.notifyDataSetChanged();
+        }
 
         showNotLoggedInState();
         Toast.makeText(requireContext(), "Ви вийшли з акаунта", Toast.LENGTH_SHORT).show();
@@ -589,14 +639,14 @@ public class AccountFragment extends Fragment implements
     public void updateReadingProgress(String mangaId, String chapterId, String mangaTitle,
                                       String chapterTitle, String chapterNumber, String coverUrl,
                                       int currentPage, int totalPages) {
-        if (authToken != null) {
+        if (authToken != null && authManager.shouldCheckToken()) {
             AccountApiService apiService = AccountApiClient.getClient().create(AccountApiService.class);
             AccountApiService.ReadingProgressRequest request =
                     new AccountApiService.ReadingProgressRequest(mangaId, chapterId, mangaTitle,
                             chapterTitle, chapterNumber, coverUrl,
                             currentPage, totalPages);
 
-            Call<Void> call = apiService.updateReadingProgress(authToken, request);
+            Call<Void> call = apiService.updateReadingProgress("Bearer " + authToken, request);
             call.enqueue(new Callback<Void>() {
                 @Override
                 public void onResponse(@NonNull Call<Void> call, @NonNull Response<Void> response) {
@@ -604,11 +654,15 @@ public class AccountFragment extends Fragment implements
                     if (response.isSuccessful()) {
                         // Оновлюємо список історії
                         loadHistory();
+                    } else if (response.code() == 401) {
+                        // 401 помилка - позначаємо, що не потрібно перевіряти токен
+                        authManager.softLogout();
+                        Log.d("AccountFragment", "Token expired (401) when updating reading progress");
                     }
                 }
 
                 @Override
-                public void onFailure(@NonNull Call<Void> call, @NonNull Throwable t) {
+                public void onFailure(@NonNull Call<Void> call, Throwable t) {
                     // Помилка оновлення прогресу
                     Log.e("AccountFragment", "Error updating reading progress", t);
                 }
@@ -619,11 +673,11 @@ public class AccountFragment extends Fragment implements
     private void navigateToAccount() {
         try {
             NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
-            
+
             // Перевіряємо, чи вже знаходимося на AccountFragment
-            int currentDestination = navController.getCurrentDestination() != null ? 
+            int currentDestination = navController.getCurrentDestination() != null ?
                     navController.getCurrentDestination().getId() : -1;
-            
+
             // Якщо не на AccountFragment, виконуємо навігацію
             if (currentDestination != R.id.nav_account) {
                 navController.navigate(R.id.nav_account);

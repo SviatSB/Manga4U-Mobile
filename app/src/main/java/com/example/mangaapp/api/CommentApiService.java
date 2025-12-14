@@ -14,16 +14,17 @@ import retrofit2.http.Query;
 public interface CommentApiService {
     @GET("api/Comment/root")
     Call<CommentPagedDto> getRootComments(
-        @Query("chapterId") String chapterId,
-        @Query("skip") int skip,
-        @Query("take") int take
+            @Query("chapterId") String chapterId,
+            @Query("page") Integer page, // optional page filter
+            @Query("skip") int skip,
+            @Query("take") int take
     );
 
     @GET("api/Comment/{commentId}/replies")
     Call<CommentPagedDto> getReplies(
-        @Path("commentId") long commentId,
-        @Query("skip") int skip,
-        @Query("take") int take
+            @Path("commentId") long commentId,
+            @Query("skip") int skip,
+            @Query("take") int take
     );
 
     @POST("api/Comment")
@@ -46,11 +47,20 @@ public interface CommentApiService {
         private String mangaChapterExternalId;
         private String text;
         private Long parentCommentId;
+        private Integer pageNumber; // optional page number to attach comment to a page
 
         public CreateCommentRequest(String mangaChapterExternalId, String text, Long parentCommentId) {
             this.mangaChapterExternalId = mangaChapterExternalId;
             this.text = text;
             this.parentCommentId = parentCommentId;
+            this.pageNumber = null;
+        }
+
+        public CreateCommentRequest(String mangaChapterExternalId, String text, Long parentCommentId, Integer pageNumber) {
+            this.mangaChapterExternalId = mangaChapterExternalId;
+            this.text = text;
+            this.parentCommentId = parentCommentId;
+            this.pageNumber = pageNumber;
         }
     }
 }
