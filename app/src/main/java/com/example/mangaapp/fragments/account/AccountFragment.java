@@ -462,9 +462,20 @@ public class AccountFragment extends Fragment implements
 
     private void openHistoryFragment() {
         try {
-            Navigation.findNavController(requireView()).navigate(R.id.action_account_to_history);
+            // Використовуємо FragmentTransaction замість Navigation
+            HistoryFragment historyFragment = new HistoryFragment();
+
+            // Отримуємо FragmentManager з актівіті
+            androidx.fragment.app.FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
+            androidx.fragment.app.FragmentTransaction transaction = fragmentManager.beginTransaction();
+
+            // Замінюємо AccountFragment на HistoryFragment в NavHost
+            transaction.replace(R.id.nav_host_fragment_content_main, historyFragment);
+            transaction.addToBackStack("history");
+            transaction.commit();
+
         } catch (Exception e) {
-            Log.e("AccountFragment", "Error navigating to HistoryFragment", e);
+            Log.e("AccountFragment", "Error opening HistoryFragment", e);
             Toast.makeText(requireContext(), "Помилка відкриття історії", Toast.LENGTH_SHORT).show();
         }
     }

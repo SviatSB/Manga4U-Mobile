@@ -111,8 +111,9 @@ public interface AccountApiService {
     @DELETE("api/Collection/{id}/manga")
     Call<ResponseBody> removeMangaFromCollection(@Header("Authorization") String token, @Path("id") String collectionId, @Query("mangaExternalId") String mangaId);
 
+    // ВИПРАВЛЕНО: змінено @Query на @Body
     @POST("api/Collection/{id}/visibility")
-    Call<ResponseBody> setCollectionVisibility(@Header("Authorization") String token, @Path("id") String collectionId, @Query("isPublic") Boolean isPublic);
+    Call<ResponseBody> setCollectionVisibility(@Header("Authorization") String token, @Path("id") String collectionId, @Body Boolean isPublic);
 
     @GET("api/Collection/search")
     Call<List<Collection>> searchCollections(@Query("name") String name);
@@ -165,8 +166,8 @@ public interface AccountApiService {
         private int totalPages;
 
         public ReadingProgressRequest(String mangaId, String chapterId, String mangaTitle,
-                                   String chapterTitle, String chapterNumber, String coverUrl,
-                                   int currentPage, int totalPages) {
+                                      String chapterTitle, String chapterNumber, String coverUrl,
+                                      int currentPage, int totalPages) {
             this.mangaId = mangaId;
             this.chapterId = chapterId;
             this.mangaTitle = mangaTitle;
@@ -199,7 +200,7 @@ public interface AccountApiService {
         private int lastChapterNumber;
 
         public UpdateHistoryRequest(String mangaExternalId, String lastChapterId, String language,
-                                   String lastChapterTitle, int lastChapterNumber) {
+                                    String lastChapterTitle, int lastChapterNumber) {
             this.mangaExternalId = mangaExternalId;
             this.lastChapterId = lastChapterId;
             this.language = language;

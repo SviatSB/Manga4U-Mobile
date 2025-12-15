@@ -31,7 +31,7 @@
             app:exitAnim="@anim/slide_out_left"
             app:popEnterAnim="@anim/slide_in_left"
             app:popExitAnim="@anim/slide_out_right" />
-        
+
         <action
             android:id="@+id/action_account_to_history"
             app:destination="@id/historyFragment"
@@ -53,8 +53,18 @@
         android:id="@+id/historyFragment"
         android:name="com.example.mangaapp.fragments.account.HistoryFragment"
         android:label="Історія читання"
-        tools:layout="@layout/fragment_history" />
-    
+        tools:layout="@layout/fragment_history">
+
+        <!-- ДОДАНО: Action для переходу до деталей манги -->
+        <action
+            android:id="@+id/action_historyFragment_to_mangaDetailFragment"
+            app:destination="@id/nav_manga_detail"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+
     <!-- Reviews Fragment -->
     <fragment
         android:id="@+id/reviewsFragment"
@@ -72,11 +82,12 @@
         android:label="Деталі манги"
         tools:layout="@layout/fragment_manga_detail">
         <argument
-            android:name="mangaId"
+            android:name="manga_id"
             app:argType="string" />
         <argument
             android:name="mangaTitle"
-            app:argType="string" />
+            app:argType="string"
+            android:defaultValue="" />
     </fragment>
 
     <fragment
@@ -120,10 +131,10 @@
     <action
         android:id="@+id/action_mangaDetailFragment_to_chapterListFragment"
         app:destination="@id/nav_chapter_list" />
-        
+
     <action
         android:id="@+id/action_mangaDetailFragment_to_reviewsFragment"
-        app:destination="@id/reviewsFragment" 
+        app:destination="@id/reviewsFragment"
         app:enterAnim="@anim/slide_in_right"
         app:exitAnim="@anim/slide_out_left"
         app:popEnterAnim="@anim/slide_in_left"
@@ -132,5 +143,9 @@
     <action
         android:id="@+id/action_chapterListFragment_to_readerFragment"
         app:destination="@id/nav_reader" />
+
+    <action
+        android:id="@+id/action_global_mangaDetailFragment"
+        app:destination="@id/nav_manga_detail" />
 
 </navigation>

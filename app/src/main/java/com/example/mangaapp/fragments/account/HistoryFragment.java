@@ -13,8 +13,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -22,6 +22,7 @@ import com.example.mangaapp.R;
 import com.example.mangaapp.adapters.HistoryAdapter;
 import com.example.mangaapp.api.AccountApiService;
 import com.example.mangaapp.api.AccountApiClient;
+import com.example.mangaapp.fragments.main.MangaDetailFragment;
 import com.example.mangaapp.models.HistoryItem;
 import com.example.mangaapp.utils.AuthManager;
 
@@ -66,15 +67,31 @@ public class HistoryFragment extends Fragment {
 
     private void setupRecyclerView() {
         historyAdapter = new HistoryAdapter(historyList, historyItem -> {
-            // Навігація до манги
+            // ПРОСТИЙ СПОСІБ: Використовуємо FragmentManager напряму
             try {
-                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                // 1. Закриваємо HistoryFragment
+                FragmentManager fragmentManager = requireActivity().getSupportFragmentManager();
+
+                // 2. Створюємо MangaDetailFragment
+                MangaDetailFragment mangaDetailFragment = new MangaDetailFragment();
                 Bundle args = new Bundle();
-                args.putString("mangaId", historyItem.getMangaExternalId());
+                args.putString("manga_id", historyItem.getMangaExternalId());
                 args.putString("mangaTitle", historyItem.getMangaName());
-                navController.navigate(R.id.nav_manga_detail, args);
+                mangaDetailFragment.setArguments(args);
+
+                // 3. Замінюємо ВСЮ навігацію (NavHost) нашим фрагментом
+                // Знаходимо NavHostFragment
+                FragmentTransaction transaction = fragmentManager.beginTransaction();
+
+                // Шукаємо контейнер для головної навігації
+                transaction.replace(R.id.nav_host_fragment_content_main, mangaDetailFragment);
+                transaction.addToBackStack("manga_detail");
+                transaction.commit();
+
+                Log.d("HistoryFragment", "Opened manga: " + historyItem.getMangaName());
+
             } catch (Exception e) {
-                Log.e("HistoryFragment", "Error navigating to manga detail", e);
+                Log.e("HistoryFragment", "Error opening manga", e);
                 Toast.makeText(requireContext(), "Помилка відкриття манги", Toast.LENGTH_SHORT).show();
             }
         });
@@ -102,12 +119,12 @@ public class HistoryFragment extends Fragment {
             @Override
             public void onResponse(@NonNull Call<List<HistoryItem>> call, @NonNull Response<List<HistoryItem>> response) {
                 progressBar.setVisibility(View.GONE);
-                
+
                 if (response.isSuccessful() && response.body() != null) {
                     historyList.clear();
                     historyList.addAll(response.body());
                     historyAdapter.notifyDataSetChanged();
-                    
+
                     if (historyList.isEmpty()) {
                         emptyHistoryText.setVisibility(View.VISIBLE);
                         historyRecyclerView.setVisibility(View.GONE);
@@ -123,7 +140,7 @@ public class HistoryFragment extends Fragment {
             }
 
             @Override
-            public void onFailure(@NonNull Call<List<HistoryItem>> call, @NonNull Throwable t) {
+            public void onFailure(@NonNull Call<List<HistoryItem>> call, Throwable t) {
                 progressBar.setVisibility(View.GONE);
                 Log.e("HistoryFragment", "Error loading history", t);
                 Toast.makeText(requireContext(), "Помилка: " + t.getMessage(), Toast.LENGTH_SHORT).show();
@@ -132,4 +149,3 @@ public class HistoryFragment extends Fragment {
         });
     }
 }
-
