@@ -16,7 +16,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
     // URL для сервера (використовуємо той самий, що й для AccountApiClient)
-    private static final String BASE_URL = "https://10.0.2.2:7220/";
+    private static final String BASE_URL = "https://manga4u-164617ec4bac.herokuapp.com/";
 
     private static Retrofit retrofit = null;
 

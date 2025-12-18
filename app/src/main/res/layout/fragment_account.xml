@@ -336,14 +336,10 @@
                                 android:layout_marginBottom="16dp"
                                 android:text="Мої колекції"
                                 android:textSize="14sp"
-                                android:textStyle="bold"
-                                app:cornerRadius="16dp"
-                                android:backgroundTint="@color/teal_700"
+                                style="@style/GradientButton"
                                 app:icon="@android:drawable/ic_menu_agenda"
                                 app:iconGravity="textStart"
-                                app:iconPadding="12dp"
-                                app:iconTint="@color/white_text"
-                                android:elevation="4dp" />
+                                app:iconPadding="12dp" />
 
                             <!-- Кнопки дій -->
                             <LinearLayout
@@ -358,15 +354,11 @@
                                     android:layout_weight="1"
                                     android:text="Редагувати"
                                     android:textSize="12sp"
-                                    android:textStyle="bold"
-                                    app:cornerRadius="16dp"
-                                    android:backgroundTint="@color/purple_accent"
+                                    style="@style/GradientButton"
                                     android:layout_marginEnd="8dp"
                                     app:icon="@drawable/ic_edit"
                                     app:iconGravity="textStart"
-                                    app:iconPadding="8dp"
-                                    app:iconTint="@color/white_text"
-                                    android:elevation="4dp" />
+                                    app:iconPadding="8dp" />
 
                                 <com.google.android.material.button.MaterialButton
                                     android:id="@+id/btn_logout"

@@ -84,10 +84,7 @@
                             android:layout_weight="1"
                             android:text="ЗАВАНТАЖИТИ"
                             android:textSize="11sp"
-                            android:textStyle="bold"
-                            app:cornerRadius="12dp"
-                            android:backgroundTint="@color/purple_accent"
-                            android:textColor="@color/white_text"
+                            style="@style/GradientButton"
                             android:layout_marginEnd="8dp"
                             app:icon="@drawable/ic_upload"
                             app:iconGravity="textStart"
@@ -340,16 +337,12 @@
                     android:layout_weight="1"
                     android:text="ЗБЕРЕГТИ ЗМІНИ"
                     android:textSize="14sp"
-                    android:textStyle="bold"
-                    app:cornerRadius="16dp"
-                    android:backgroundTint="@color/purple_accent"
-                    android:textColor="@color/white_text"
+                    style="@style/GradientButton"
                     android:layout_marginEnd="12dp"
                     app:icon="@drawable/ic_save"
                     app:iconGravity="textStart"
                     app:iconPadding="8dp"
-                    app:iconSize="20dp"
-                    android:elevation="4dp" />
+                    app:iconSize="20dp" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_cancel"

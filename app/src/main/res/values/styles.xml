@@ -20,6 +20,20 @@
         <item name="cornerRadius">8dp</item>
     </style>
 
+    <!-- Стиль для градієнтних кнопок -->
+    <style name="GradientButton" parent="Widget.MaterialComponents.Button">
+        <item name="android:textColor">@color/white_text</item>
+        <item name="android:textStyle">bold</item>
+        <item name="cornerRadius">26dp</item>
+        <!-- Важливо: backgroundTint має бути null -->
+        <item name="backgroundTint">@null</item>
+        <!-- Встановлюємо кастомний фон -->
+        <item name="android:background">@drawable/gradient_button_background</item>
+        <item name="iconTint">@color/white_text</item>
+        <item name="android:elevation">4dp</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+
     <!-- Стиль для темних полів вводу -->
     <style name="DarkTextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
         <item name="boxStrokeColor">@color/dark_gray_input</item>

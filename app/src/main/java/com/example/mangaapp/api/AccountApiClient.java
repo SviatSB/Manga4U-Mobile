@@ -25,7 +25,7 @@ import java.io.IOException;
 public class AccountApiClient {
     // URL для локального сервера (змініть на ваш IP адресу для тестування на реальному пристрої)
     // private static final String BASE_URL = "http://10.0.2.2:5292/"; // HTTP для емулятора
-    private static final String BASE_URL = "https://10.0.2.2:7220/"; // HTTPS для емулятора
+    private static final String BASE_URL = "https://manga4u-164617ec4bac.herokuapp.com/"; // HTTPS для емулятора
 
     private static Retrofit retrofit = null;
     private static Context appContext;
